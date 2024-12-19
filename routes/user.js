@@ -37,7 +37,7 @@ router.get('/auth/google/callback',
     userController.googleCallback // Handle successful authentication in the controller
 );
 
-router.get('/category/:id',  userController.loadCategory)
+router.get('/category/:id', auth.checkSession,  userController.loadCategory)
 
 router.post('/resend-otp', userController.resendOtp)
 
@@ -45,5 +45,5 @@ router.get('/forgot-password', userController.loadforgotPassword)
 router.post('/forgot-password', userController.sendResetMail)
 router.get('/reset-password/:token', userController.loadResetPassword)
 router.post('/reset-password', userController.resetPassword)
-router.get('/products', userController.loadProducts)
+router.get('/products', auth.checkSession, userController.loadProducts)
 module.exports = router;

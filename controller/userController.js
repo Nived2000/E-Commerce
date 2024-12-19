@@ -116,43 +116,58 @@ const resendOtp = async (req, res) => {
 };
 
 const verifyOtp = async (req, res) => {
-    const { email, password, phone, name, otp } = req.body
-    
+    const { email, password, phone, name, otp } = req.body;
+
     // Check if OTP exists for the email
-    const storedOtp = otpStorage[email]
+    const storedOtp = otpStorage[email];
 
     if (!storedOtp) {
-        return res.status(400).json({ message: 'OTP not sent or expired' })
+        return res.render('user/verifyOtp', { 
+            message: "OTP not sent or expired", 
+            name, 
+            email, 
+            password, 
+            phone 
+        });
     }
 
     // Check if OTP is expired (2 minutes expiration)
-    const currentTime = Date.now()
-    const otpExpiryTime = 2 * 60 * 1000
+    const currentTime = Date.now();
+    const otpExpiryTime = 2 * 60 * 1000;
+
     if (currentTime - storedOtp.timestamp > otpExpiryTime) {
-        delete otpStorage[email]
-        return res.status(400).json({ message: 'OTP expired' })
+        delete otpStorage[email]; // Remove expired OTP
+        return res.render('user/register', {message: "OTP expired, Register user again"});
     }
 
     // Check if OTP matches
     if (storedOtp.otp === otp) {
-        delete otpStorage[email] // OTP verified, now register the user
+        delete otpStorage[email]; // OTP verified, now register the user
 
         // Hash the password before saving
-        const hashedPassword = await bcrypt.hashSync(req.body.password, saltRounds)
+        const hashedPassword = bcrypt.hashSync(password, saltRounds);
 
         const newUser = new User({
             name, 
             email,
             password: hashedPassword,
             phone 
-        })
+        });
 
-        await newUser.save()
-        res.render('user/login', { message: "User registered successfully!" })
+        await newUser.save();
+        return res.render('user/login', { 
+            message: "User registered successfully!" 
+        });
     } else {
-        res.render('user/verifyOtp', {message: "Invalid OTP", name, email, password, phone })
+        return res.render('user/verifyOtp', { 
+            message: "Invalid OTP. Please try again.", 
+            name, 
+            email, 
+            password, 
+            phone 
+        });
     }
-}
+};
 
 // Load registration page
 const loadRegister = (req, res) => {
@@ -317,6 +332,11 @@ res.render('user/productDetails', { product, category, products, discountedPrice
 }
 
 const loadCategory = async(req, res)=>{
+    const user = await User.findOne({ email: req.session.email });
+    if (user.isBlocked) {
+        req.session.destroy(); // Destroy session if user is blocked
+        return res.redirect('/user/login');
+    }
     categoryID = req.params.id
     let category = await Category.findOne({categoryId:categoryID}, {products:1, _id:0})
     
@@ -418,7 +438,7 @@ const resetPassword = async(req, res)=>{
         user.resetTokenExpiry = null;
         await user.save();
 
-        res.render('user/login', { message: 'Password reset successful! Please log in.', message2: null });
+        res.render('user/login', { message: 'Password reset successful! Please log in.', message2: null, user });
     } catch (error) {
         console.error(error);
         res.render('user/resetPassword', { message: 'An error occurred. Please try again.', email });
@@ -428,6 +448,11 @@ const resetPassword = async(req, res)=>{
 const loadProducts = async(req, res)=>{
 
     let products = await Product.find({ isListed: true });
+    const user = await User.findOne({ email: req.session.email });
+    if (user.isBlocked) {
+        req.session.destroy(); // Destroy session if user is blocked
+        return res.redirect('/user/login');
+    }
 
     res.render('user/listProducts', {products})
 }

@@ -83,31 +83,37 @@ const loadAddProducts = async (req, res)=>{
 const addProduct = async (req, res) => {
     try {
         let { name, description, price, brand, size, stock, discount, coupon } = req.body;
-
+        let products = await Product.find()
         // Check if the product already exists
+        let NAME = name.toUpperCase()
+        let productExist = await Product.findOne({name: NAME, size})
+        if(productExist){
+            res.render('admin/listProducts',{message:"Product already exist", products});
+            return
+        }else{
+            const images = req.files.map(file => file.filename);
+
+            // Create a new product if it doesn't exist
+            const newProduct = new Product({
+                name:NAME,
+                description,
+                price,
+                size,
+                brand,
+                images,
+                discount,
+                stock,
+                coupon
+            });
+
+
+            // Save the new product to the database
+            await newProduct.save();
+
+            res.redirect('/admin/products'); // Redirect after adding the product
+        }
         
-
-        // Map uploaded files to get filenames
-        const images = req.files.map(file => file.filename);
-
-        // Create a new product if it doesn't exist
-        const newProduct = new Product({
-            name,
-            description,
-            price,
-            size,
-            brand,
-            images,
-            discount,
-            stock,
-            coupon
-        });
-
-
-        // Save the new product to the database
-        await newProduct.save();
-
-        res.redirect('/admin/products'); // Redirect after adding the product
+        
     } catch (error) {
         console.error(error);
         res.render('admin/addProduct', { message: 'Error adding product' });
@@ -151,13 +157,24 @@ const loadEditProduct = async(req, res)=>{
 
 const editProduct = async(req, res)=>{
     let proID = req.params.id
+    
     let { name, description, price, brand, size, stock, discount, coupon } = req.body;
     const images = req.files.map(file => file.filename);
 
-    await Product.updateOne({productId: proID}, {$set:{name, description, price, brand, size, stock, discount, coupon }})
-    await Product.updateOne({productId: proID}, {$push : {images: {$each: images}}})
-    let products = await Product.find()
-    res.render('admin/listProducts', {products, message:"Product edited Successfully"})
+    let productExist = await Product.findOne({name, description, price, brand, size, stock, discount, coupon })
+
+    if(productExist){
+        await Product.deleteOne({productId: proID})
+        let products = await Product.find()
+        res.render('admin/listProducts', {products, message:"Product already exist"})
+    }else{
+        await Product.updateOne({productId: proID}, {$set:{name, description, price, brand, size, stock, discount, coupon }})
+        await Product.updateOne({productId: proID}, {$push : {images: {$each: images}}})
+        let products = await Product.find()
+        res.render('admin/listProducts', {products, message:"Product edited Successfully"})
+    }
+
+    
 }
 
 const logoutAdmin = async (req, res) => {

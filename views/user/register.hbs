@@ -36,6 +36,7 @@
                 </a>
             </div>
         </form>
+        <input type="hidden" value="{{message}}" id="message">
     </div>
 </main>
 
@@ -59,7 +60,7 @@
 
         // Check if email is valid
         if (!emailPattern.test(emailInput.value)) {
-            Swal.fire("Email must be valid and end with .com.");
+            Swal.fire("Email must be valid");
             return false;
         }
 
@@ -75,4 +76,12 @@
     document.getElementById("emailForm").onsubmit = function () {
         return formValidate();
     };
+
+    const message = document.getElementById('message').value;
+    if (message) {
+        Swal.fire({
+            icon: 'info', // Customize icon as needed
+            text: message
+        });
+    }
 </script>
