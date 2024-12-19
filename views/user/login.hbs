@@ -1,0 +1,84 @@
+<link rel="stylesheet" href="/styles/userLogin.css">
+<div id="particles-js" class="snow"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<main>
+    <div class="left-side"></div>
+
+    <div class="right-side">
+        <form action="/user/login" method="post" onsubmit="return formValidate()" id="emailForm">
+            <div class="or">SIGN-IN</div>
+
+            <label for="email">Email</label>
+            <input type="text" id="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}" required />
+
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Enter Password" name="password" required />
+
+            <button type="submit" class="login-btn">Sign in</button>
+            <div class="links">
+                <a href="/user/forgot-password">Forgot Password?</a>
+                <a href="/user/register">Do not have an account?</a>
+            </div>
+            <input type="hidden" value="{{message2}}" id="message2">
+            <input type="hidden" value="{{message}}" id="message">
+        </form>
+    </div>
+</main>
+
+<script>
+    // Display SweetAlert messages if needed
+    const message2 = document.getElementById('message2').value;
+    if (message2) {
+        Swal.fire({
+            icon: 'info', // Customize icon as needed
+            title: 'Note',
+            text: message2
+        });
+    }
+
+    const message = document.getElementById('message').value;
+    if (message) {
+        Swal.fire({
+            icon: 'success', // Customize icon as needed
+            text: message
+        });
+    }
+
+    // Form Validation Function
+    function formValidate() {
+        const emailInput = document.getElementById("email");
+        const password = document.getElementById("password").value;
+
+        // Regex for valid email format
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        // Validate email
+        if (!emailPattern.test(emailInput.value)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Email',
+                text: 'Please enter a valid email address!'
+            });
+            return false;
+        }
+
+        // Validate password
+        if (!password) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Password',
+                text: 'Password field cannot be empty!'
+            });
+            return false;
+        }
+
+        // If all validations pass
+        return true;
+    }
+
+    // Attach validation function to form submission
+    document.getElementById("emailForm").onsubmit = function () {
+        return formValidate();
+    };
+</script>

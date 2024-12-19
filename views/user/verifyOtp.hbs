@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="/styles/verifyOtp.css">
+<div class="form-container">
+    <h2>Verify OTP</h2>
+    <form action="/user/verify-otp" method="post">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{email}}" readonly />
+
+        <!-- Hidden fields -->
+        <input  type="hidden" name="password" value="{{password}}" />
+        <input  type="hidden" name="name" value="{{name}}" />
+        <input  type="hidden" name="phone" value="{{phone}}" />
+
+        <input type="text" name="otp" placeholder="Enter OTP" required />
+        <button type="submit">Verify OTP</button>
+    </form>
+
+    <form action="/user/resend-otp" method="post">
+        <input type="hidden" name="email" value="{{email}}" />
+        <button type="submit" class="resend-otp">Resend OTP</button>
+    </form>
+    <input type="text" value="{{message}}" name="" id="message">
+    <p id="timer-message"><span id="timer">Otp valid for only 2 minutes!</span>.</p>
+</div>
+<script>
+    const message = document.getElementById('message').value;
+
+    // Check if message exists and is not an empty string
+    if (message) {
+        Swal.fire({
+            icon: 'info',                    // Customize icon as needed
+            title: 'Note',
+            text: message
+        });
+    }
+
+</script>

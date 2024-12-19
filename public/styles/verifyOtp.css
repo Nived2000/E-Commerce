@@ -1,0 +1,95 @@
+/* General body styling */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(120deg, #84fab0, #8fd3f4);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #333;
+}
+
+/* Container styling */
+.form-container {
+    background: #ffffff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Header styling */
+.form-container h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #555;
+}
+
+/* Input fields styling */
+.form-container input[type="email"],
+.form-container input[type="text"] {
+    width: 100%;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* Button styling */
+.form-container button {
+    width: 100%;
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Button hover effect */
+.form-container button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 480px) {
+    .form-container {
+        padding: 15px 20px;
+    }
+    .form-container h2 {
+        font-size: 18px;
+    }
+    .form-container input[type="email"],
+    .form-container input[type="text"] {
+        font-size: 12px;
+    }
+    .form-container button {
+        font-size: 14px;
+    }
+}
+
+input[type="password"],
+input[type="text"],
+button {
+    width: 100%;
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+/* Password input field */
+input[type="password"]:focus {
+    outline: none;
+    border-color: #ffc800;
+    box-shadow: 0 0 5px rgba(255, 200, 0, 0.8);
+}

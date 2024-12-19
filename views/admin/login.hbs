@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="/styles/adminLogin.css">
+    <div id="particles-js" class="snow"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <main>
+       <div class="left-side"></div>
+      
+      <div class="right-side">
+        <form action="/admin/login" method="post">
+        
+        <div class="or">ADMIN SIGN-IN</div>
+
+        <label for="email">Email</label>
+        <input type="text" placeholder="Enter Email" name="email" required/>
+
+        <label for="password">Password</label>
+        <input
+          type="password"
+          placeholder="Enter Password"
+          name="password"
+           required/>
+
+        <button type="submit" class="login-btn">Sign in</button>
+        <div class="links">
+          <a href="#">Forgot password?</a>
+          <a href="/user/register">Do not have an account?</a>
+        </div>
+        <input type="hidden" value="{{message}}" id="message">
+      </form>
+      </div>
+    </main>
+    <script>
+   
+    const message = document.getElementById('message').value
+    if (message) {
+        Swal.fire({
+            icon: 'success',      // Customize icon as needed
+            text: message
+        });
+    }
+    
+    
+</script>

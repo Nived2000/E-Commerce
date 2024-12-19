@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="/styles/userRegister.css">
+<div id="particles-js" class="snow"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<main>
+    <div class="left-side"></div>
+
+    <div class="right-side">
+        <form action="/user/register" method="post" onsubmit="return formValidate()" id="emailForm">
+            <div class="or">REGISTER</div>
+
+            <label for="name">Name</label>
+            <input id="name" type="text" placeholder="Enter your name" name="name" value="{{enteredName}}" required />
+
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}" required />
+
+            <label for="phone">Phone Number</label>
+            <input id="phone" type="text" placeholder="Enter Phone Number" name="phone" value="{{enteredPhone}}" required />
+
+            <label for="password">Password</label>
+            <input id="password" type="password" placeholder="Enter Password" name="password" value="{{enteredPassword}}" required />
+
+            <label for="confirmPassword">Confirm Password</label>
+            <input id="confirmPassword" type="password" placeholder="Confirm entered Password" name="confirmPassword" required />
+
+            <button type="submit" class="login-btn">Sign Up</button>
+
+            <div class="links">
+                <a href="/user/login">Already have an account?</a>
+            </div>
+
+            <div class="social-login">
+                <a href="/user/auth/google">
+                    <button type="button" class="google-login">Login with Google</button>
+                </a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    function formValidate() {
+        const emailInput = document.getElementById("email");
+        const password = document.getElementById("password").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const name = document.getElementById("name").value;
+
+        // Regex to validate email with `.com` at the end
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        // Check if fields are empty
+        if (!name || !emailInput.value || !password || !confirmPassword) {
+            Swal.fire("All fields are required!");
+            return false;
+        }
+
+        // Check if email is valid
+        if (!emailPattern.test(emailInput.value)) {
+            Swal.fire("Email must be valid and end with .com.");
+            return false;
+        }
+
+        // Check if passwords match
+        if (password !== confirmPassword) {
+            Swal.fire("Passwords do not match!");
+            return false;
+        }
+
+        return true; // Allow form submission
+    }
+
+    document.getElementById("emailForm").onsubmit = function () {
+        return formValidate();
+    };
+</script>

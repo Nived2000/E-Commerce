@@ -1,0 +1,157 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/styles/adminDashboard.css">
+
+<div id="particles-js" class="snow"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="background-color: #3D464D;">
+  <div class="container-fluid">
+    <div class="col-lg-4">
+                <a href="" class="text-decoration-none">
+                    <span style="color:#3D464D; background-color:#ffc800" class="h1 text-uppercase px-2">M</span>
+                    <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
+                </a>
+            </div>
+    <a class="navbar-brand" href="/" style="color: #ffc800;">ADMIN PANEL</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/admin/products" style="color: #ffc800;">Products</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/dashboard" style="color: #ffc800;">Users</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/category" style="color: #ffc800;">Category</a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="/admin/logout" style="color: #ffc800;">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+<!-- Add User Section -->
+<div class="d-flex flex-column align-items-center mt-4">
+  
+</div>
+
+<!-- User Table -->
+<div class="container mt-4">
+    <div class="table-heading text-center">
+    <h2 class="text-uppercase">User Management</h2>
+    
+  </div>
+  <table class="table table-bordered custom-table">
+    <thead>
+      <tr>
+        <th scope="col">Sl. No</th>
+        <th scope="col">Username</th>
+        <th scope="col">Email ID</th>
+        <th scope="col">Created At</th>
+        <th scope="col">Blocked Status</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each users}}
+      <tr>
+        <th scope="row">{{@index }}</th>
+        <td>{{this.name}}</td>
+        <td>{{this.email}}</td>
+        <td>{{this.createdAt}}</td>
+        {{#if this.isBlocked}}
+        <td>Access Blocked</td>
+        {{else}}
+        <td>Access Allowed</td>
+        {{/if}}
+        {{#if this.isBlocked}}
+        
+        <td>
+  <button 
+    class="btn btn-sm btn-outline-success" 
+    onclick="confirmUnblockUser('{{this.userId}}')" 
+    data-bs-toggle="tooltip" 
+    data-bs-placement="top" 
+    >
+    Unblock
+  </button>
+</td>
+{{else}}
+<td>
+  <button 
+    class="btn btn-sm btn-outline-danger" 
+    onclick="confirmBlockUser('{{this.userId}}')" 
+    data-bs-toggle="tooltip" 
+    data-bs-placement="top" 
+    title="Block this user">
+    Block User
+  </button>
+</td>
+
+{{/if}}
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <input id="message" value="{{message}}" type="hidden">
+</div>
+
+<script>
+  const message = document.getElementById('message').value;
+
+  // Show SweetAlert message if it exists
+  if (message) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Note',
+      text: message,
+    });
+  }
+
+  
+
+  function confirmBlockUser(userId) {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You will be able to undo this action!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ffc800',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, block them!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Redirect to the block user route
+        window.location.href = `/admin/blockUser/${userId}`;
+      }
+    });
+  }
+  function confirmUnblockUser(userId) {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You will be able to undo this action!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ffc800',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, Unblock them!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Redirect to the unblock user route
+        window.location.href = `/admin/unblockUser/${userId}`;
+      }
+    });
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

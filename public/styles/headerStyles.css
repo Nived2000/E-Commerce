@@ -1,0 +1,22 @@
+/* Style the search bar */
+.input-group .form-control {
+    border-radius: 30px; /* Makes the search bar rounded */
+    border: 2px solid #343a40; /* Adds a dark border */
+    padding: 0.5rem 1rem; /* Adds padding for a better look */
+}
+.input-group .input-group-text {
+    border-radius: 30px; /* Matches the rounding of the search bar */
+    border: 2px solid #343a40; /* Adds a dark border */
+}
+/* Additional navbar styles */
+.navbar-vertical .navbar-nav .nav-item .dropdown-menu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    display: none;
+    margin: 0;
+    padding: 0;
+}
+.navbar-vertical .navbar-nav .nav-item:hover .dropdown-menu {
+    display: block;
+}
