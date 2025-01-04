@@ -1,0 +1,21 @@
+.d-flex.flex-lg-row .flex-grow-1 {
+    min-width: 0; /* Prevent overflow issues */
+}
+
+.ml-lg-3 {
+    margin-left: 1rem; /* Add spacing between profile and add address sections */
+}
+
+.card {
+    flex: 1; /* Ensure equal width for both cards */
+}
+
+@media (max-width: 992px) {
+    .ml-lg-3 {
+        margin-left: 0; /* Remove left margin for stacked layout on smaller screens */
+    }
+
+    .d-flex.flex-lg-row {
+        flex-direction: column; /* Stack sections vertically on smaller screens */
+    }
+}

@@ -4,6 +4,7 @@ const adminRouter = require('./routes/admin')
 const path =  require('path')
 const connectDB = require('./db/config')
 const session = require('express-session')
+const exphbs = require('express-handlebars');
 const nocache = require('nocache')
 const passport = require("passport");
 const morgan = require('morgan');
@@ -30,8 +31,17 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-app.set('views', path.join(__dirname, 'views'))
-app.set('view engine', 'hbs')
+app.engine('hbs', exphbs.engine({
+  extname: 'hbs',
+  defaultLayout: 'layouts', // Specify default layout
+  layoutsDir: path.join(__dirname, 'views', 'layouts'),
+  partialsDir: path.join(__dirname, 'views', 'partials'), // Add partials directory
+  runtimeOptions: {
+        allowProtoPropertiesByDefault: true  // Disable prototype access restriction
+    }
+}));
+app.set('view engine', 'hbs');
+app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'))
 app.use(express.urlencoded({ extended: true }));// Middleware to parse URL-encoded data (e.g., form submissions)
 app.use(express.json()); // Middleware to parse JSON data

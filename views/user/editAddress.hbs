@@ -1,0 +1,41 @@
+
+<div id="particles-js" class="snow"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<div class="container col-md-4 mt-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5>Edit Address</h5>
+            </div>
+            <div class="card-body">
+                <form id="edit-profile-form" method="post" action="/user/postEditedAddress/{{address._id}}">
+                    <div class="form-group">
+                        <label for="edit-name">Line1</label>
+                        <input type="text" name="line1" class="form-control" id="edit-name" value="{{address.line1}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-email">City</label>
+                        <input type="text" name="city" class="form-control" id="edit-email" value="{{address.city}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">State</label>
+                        <input type="text" name="state" class="form-control" id="edit-phone" value="{{address.state}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">Country</label>
+                        <input type="text" name="country" class="form-control" id="edit-phone" value="{{address.country}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-phone">Zip Code</label>
+                        <input type="text" name="zipCode" class="form-control" id="edit-phone" value="{{address.zipCode}}">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a href="/user/profile" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>

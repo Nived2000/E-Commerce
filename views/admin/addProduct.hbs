@@ -37,55 +37,86 @@
 <!-- Add Product Form -->
   <div class="container my-5">
     <h2 class="text-center add-product">ADD NEW PRODUCT</h2>
-    <form action="/admin/addProducts" method="POST" enctype="multipart/form-data" class="product-form">
-      <div class="form-group mb-4">
-        <label for="name" class="text-white">Product Name:</label>
-        <input type="text" id="name" name="name" class="form-control" placeholder="Enter product name" required>
-      </div>
-      <div class="form-group mb-4">
-        <label for="description" class="text-white">Description:</label>
-        <textarea id="description" name="description" class="form-control" placeholder="Enter product description" required></textarea>
-      </div>
-      <div class="form-group mb-4">
-        <label for="price" class="text-white">Price (₹):</label>
-        <input type="number" id="price" name="price" class="form-control" placeholder="Enter price" required>
-      </div>
-  
-      <div class="form-group mb-4">
-        <label for="brand" class="text-white">Brand:</label>
-        <input type="text" id="stock" name="brand" class="form-control" placeholder="Enter product brand" required>
-      </div>
-      <div class="form-group mb-4">
-        <label for="size" class="text-white">Size:</label>
-        <input type="text" id="stock" name="size" class="form-control" placeholder="Enter product size" required>
-      </div>
-      <div class="form-group mb-4">
-        <label for="size" class="text-white">Discount (%):</label>
-        <input type="number" id="stock" name="discount" class="form-control" placeholder="Enter any discount" required>
-      </div><div class="form-group mb-4">
-        <label for="size" class="text-white">Stock:</label>
-        <input type="number" id="stock" name="stock" class="form-control" placeholder="Enter product stock" required>
-      </div>
-      <div class="form-group mb-4">
-        <label for="size" class="text-white">Coupon Applicable:</label>
-        <input type="text" id="stock" name="coupon" class="form-control" placeholder="Enter coupon applicable">
-      </div>
-      <div class="form-group mb-4">
-      <label for="images" class="text-white">Upload Images:</label>
-      <input type="file" id="images" name="images"  multiple accept="image/*">
-    </div>
-    <div id="imagePreviewContainer" class="image-preview-container"></div>
-    <div class="d-grid gap-2">
-      <button type="submit" class="btn btn-warning">Add Product</button>
-    </div>
-  </form>
+    <form action="/admin/addProducts" method="POST" enctype="multipart/form-data" class="product-form" onsubmit="return validateForm()">
+  <div class="form-group mb-4">
+    <label for="name" class="text-white">Product Name:</label>
+    <input type="text" id="name" name="name" class="form-control" placeholder="Enter product name" required>
+  </div>
+  <div class="form-group mb-4">
+    <label for="description" class="text-white">Description:</label>
+    <textarea id="description" name="description" class="form-control" placeholder="Enter product description" required></textarea>
+  </div>
+  <div class="form-group mb-4">
+    <label for="price" class="text-white">Price (₹):</label>
+    <input type="number" id="price" name="price" class="form-control" placeholder="Enter price" min="0" required>
+  </div>
+  <div class="form-group mb-4">
+    <label for="brand" class="text-white">Brand:</label>
+    <input type="text" id="brand" name="brand" class="form-control" placeholder="Enter product brand" required>
+  </div>
+  <div class="form-group mb-4">
+    <label for="size" class="text-white">Size:</label>
+    <input type="text" id="size" name="size" class="form-control" placeholder="Enter product size" required>
+  </div>
+  <div class="form-group mb-4">
+    <label for="discount" class="text-white">Discount (%):</label>
+    <input type="number" id="discount" name="discount" class="form-control" placeholder="Enter any discount" min="0" max="100" required>
+  </div>
+  <div class="form-group mb-4">
+    <label for="stock" class="text-white">Stock:</label>
+    <input type="number" id="stock" name="stock" class="form-control" placeholder="Enter product stock" min="0" required>
+  </div>
+  <div class="form-group mb-4">
+    <label for="coupon" class="text-white">Coupon Applicable:</label>
+    <input type="text" id="coupon" name="coupon" class="form-control" placeholder="Enter coupon applicable">
+  </div>
+  <div class="form-group mb-4">
+    <label for="images" class="text-white">Upload Images:</label>
+    <input type="file" id="images" name="images" multiple accept="image/*">
+  </div>
+  <div id="imagePreviewContainer" class="image-preview-container"></div>
+  <div class="d-grid gap-2">
+    <button type="submit" class="btn btn-warning">Add Product</button>
+  </div>
+</form>
+
 </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
   document.getElementById('images').addEventListener('change', function (event) {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const input = event.target;
     let files = Array.from(input.files); // Store the file list as an array
+    const price = document.getElementById('price').value;
+    const discount = document.getElementById('discount').value;
+    const stock = document.getElementById('stock').value;
+
+    // Validations with SweetAlert
+    if (price < 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Input',
+        text: 'Price cannot be negative.',
+      });
+      return false;
+    }
+    if (discount < 0 || discount >= 100) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Discount',
+        text: 'Discount must be between 0 and 100.',
+      });
+      return false;
+    }
+    if (stock < 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Stock',
+        text: 'Stock cannot be negative.',
+      });
+      return false;
+    }
 
     // Clear previous previews
     previewContainer.innerHTML = '';
@@ -149,7 +180,11 @@
 
           reader.readAsDataURL(file);
         } else {
-          alert('Invalid file type. Please select images only.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Invalid File',
+            text: 'Please select images only.',
+          });
         }
       });
     }

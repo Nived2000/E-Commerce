@@ -13,7 +13,9 @@ const productSchema = new mongoose.Schema({
     isListed: { type: Boolean, default: true },
     isAvailable: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
-    coupon: { type: String, required: false}
+    coupon: { type: String, required: false},
+    inCategory: { type: Boolean, required: false, default: false },
+    orderCount: { type: Number, required: false, default:0 },
 });
 
 const Product = mongoose.model('Product', productSchema);

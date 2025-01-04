@@ -90,3 +90,13 @@
 
   <a href="/admin/addProducts" class="btn btn-custom-yellow mt-2">Add Products</a>
 </div>
+<script>
+  const message = document.getElementById('message').value
+
+  if(message){
+    Swal.fire({
+            icon: 'info',      // Customize icon as needed
+            text: message
+        });
+  }
+</script>

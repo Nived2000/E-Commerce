@@ -93,6 +93,17 @@ h6 {
   margin-bottom: 0.5rem;
 }
 
+/* Hide the up and down arrows on number input */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 p {
   margin-top: 0;
   margin-bottom: 1rem;
