@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="/styles/orderDetails.css">
+<div id="particles-js" class="snow"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="container-fluid d-flex justify-content-center" style="min-height: 100vh; background: #f7f9fc;">
+    <div class="row px-xl-5 w-100">
+        <div class="col-12 table-responsive mb-5">
+            <table class="table table-light table-borderless table-hover text-center mb-0 shadow-lg rounded">
+                <thead class="thead-dark" style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
+                    <tr>
+                        <th scope="col" class="text-center">SI.No</th>
+                        <th scope="col" class="text-center">Products</th>
+                        <th scope="col" class="text-center">Price</th>
+                        <th scope="col" class="text-center">Quantity</th>
+                        <th scope="col" class="text-center">Total</th>
+                        {{#ifEquals deliveryStatus "Delivered"}}
+                        <th scope="col" class="text-center">Action</th>
+                        {{/ifEquals}}
+                    </tr>
+                </thead>
+                <tbody class="align-middle">
+                    {{#each products}}
+                    <tr>
+                        <td class="text-center">{{increment @index}}</td>
+                        <td class="align-middle text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span><b>{{this.productName}}</b></span>
+                            </div>
+                        </td>
+                        <td class="text-center align-middle">{{this.price}} ₹</td>
+                        <td class="text-center align-middle">
+                            <div class="input-group">
+                                <span class="mx-2 quantity-text">{{this.quantity}}</span>
+                            </div>
+                        </td>
+                        <td class="text-center align-middle">{{multiply this.price this.quantity}} ₹</td>
+                        {{#ifEquals ../deliveryStatus "Delivered"}}
+                        <td class="text-center">
+                            {{#if this.returnStatus}}
+                                {{#if this.adminApproved}}
+                                <span class="text-success">Product has been Returned</span>
+                                {{else}}
+                                <span class="text-warning">Return confirmation Pending</span>
+                                {{/if}}
+                            {{else}}
+                            <a href="/user/returnProduct/{{this.id}}" class="btn btn-primary shadow-sm rounded">Return Product</a>
+                            {{/if}}
+                        </td>
+                        {{/ifEquals}}
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -22,11 +22,14 @@ const orderSchema = new mongoose.Schema({
             price: { type: Number, required: true },
             quantity: { type: Number, required: true, min: 1 }, // Quantity of each product
             size: { type: String, required: true }, // Store the price at the time of adding to cart
+            returnStatus: { type: Boolean, default: false },
+            adminApproved: { type: Boolean, default: false}
             
         }
     ],
     address: addressSchema,
     paymentMethod: { type: String, required: true},
+    orderAmount: { type: Number, required: true },
     deliveryStatus: { type: String, default: "In Transit" },
     createdAt: { type: Date, default: Date.now }, // Timestamp of cart creation
     updatedAt: { type: Date, default: Date.now }, // Timestamp of last cart update

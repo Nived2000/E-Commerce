@@ -23,24 +23,35 @@
                         <strong>Phone Number:</strong>
                         <span id="user-phone">{{user.phone}}</span>
                     </div>
-                    <a href="/user/editProfile"><button class="btn btn-primary mt-1 mb-3">Edit Profile</button></a>
+
+                    <a href="/user/editProfile">
+                        <button class="btn btn-primary mt-1 mb-3">Edit Profile</button>
+                    </a>
                     <div class="mb-3">
                         <strong>Addresses:</strong>
                         <div id="user-addresses">
                             {{#each user.address}}
-                            <div class="d-flex align-items-center mb-2">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
                                 <div>
                                     <strong>•</strong> {{this.line1}}, {{this.city}}, {{this.state}}, {{this.zipCode}}
                                 </div>
                                 <a href="/user/editAddress/{{this._id}}">
-                                    <button class="btn btn-sm btn-secondary ml-3">Edit</button>
+                                    <button class="btn btn-sm btn-secondary">Edit</button>
                                 </a>
                             </div>
                             {{/each}}
                         </div>
                     </div>
+                    <div class="mb-3 p-3 rounded border"
+                        style="background-color: #f8f9fa; border-left: 5px solid #ffc800; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                        <strong class="text-dark" style="font-size: 1.1em;">Wallet Balance:</strong>
+                        <span id="user-wallet" class="font-weight-bold" style="font-size: 1.2em; color: #2d6a4f;">₹
+                            {{walletAmount}}</span>
+                    </div>
+
                 </div>
             </div>
+
 
             <!-- Right Column: Add Address -->
             <div class="card mb-3 flex-grow-1 ml-lg-3">
@@ -80,38 +91,9 @@
             </div>
         </div>
 
-        <!-- Order History -->
-        <div class="card w-100">
-            <div class="card-header bg-primary text-white">
-                <h5>Order History</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Number of Products</th>
-                                <th>Payment Status</th>
-                                <th>Delivery Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{#each orders}}
-                            <tr>
-                                <td>{{this._id}}</td>
-                                <td>{{this.createdAt}}</td>
-                                <td>{{this.products.length}}</td>
-                                <td>{{this.paymentMethod}}</td>
-                                <td>{{this.deliveryStatus}}</td>
-                            </tr>
-                            {{/each}}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+
+
+
     </div>
 </div>
 
@@ -125,6 +107,8 @@
             text: message
         });
     }
+
+
 </script>
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>

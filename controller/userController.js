@@ -7,12 +7,22 @@ const crypto = require('crypto')
 const Category = require('../model/categoryModel')
 const Cart = require('../model/cartModel')
 const Order = require('../model/orderModel')
+const Wallet = require('../model/walletModel')
+const Coupon = require('../model/couponModel')
 const nodemailer = require('nodemailer')
 const saltRounds = 10
 const passport = require('passport')
 const { log } = require('console')
+const Razorpay = require('razorpay');
 // In-memory storage for OTP (for demonstration purposes)
 let otpStorage = {}
+
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+    key_id: "rzp_test_iArv7aHRf3bNlj",
+    key_secret: "Tjl4Q6d8S8mDX1IuZe7Faqtx",
+});
+
 
 const registerUser = async (req, res) => {
     try {
@@ -27,7 +37,7 @@ const registerUser = async (req, res) => {
                 enteredEmail: email,
                 enteredName: name,
                 enteredPhone: phone,
-                enteredPassword: password, hideHeader: true
+                enteredPassword: password, hideHeader: true, hideFooter: true
             });
         }
 
@@ -65,7 +75,7 @@ const registerUser = async (req, res) => {
                 password,
                 phone,
                 name,
-                message: 'OTP sent successfully!', hideHeader: true
+                message: 'OTP sent successfully!', hideHeader: true, hideFooter: true
             });
         });
     } catch (error) {
@@ -80,7 +90,7 @@ const resendOtp = async (req, res) => {
 
         // Check if the email exists in OTP storage
         if (!otpStorage[email]) {
-            return res.render('user/verifyOtp', { email, message: 'OTP request not found or expired', hideHeader: true });
+            return res.render('user/verifyOtp', { email, message: 'OTP request not found or expired', hideHeader: true, hideFooter: true });
         }
 
         // Generate a new OTP and update OTP storage
@@ -111,11 +121,11 @@ const resendOtp = async (req, res) => {
                 console.error("Error resending OTP: ", error);
                 return res.render('user/verifyOtp', { email, message: 'Error resending OTP. Please try again.' });
             }
-            res.render('user/verifyOtp', { email, message: 'OTP resent successfully!', hideHeader: true });
+            res.render('user/verifyOtp', { email, message: 'OTP resent successfully!', hideHeader: true, hideFooter: true });
         });
     } catch (error) {
         console.error(error);
-        res.render('user/verifyOtp', { email, message: 'An error occurred while resending OTP.', hideHeader: true });
+        res.render('user/verifyOtp', { email, message: 'An error occurred while resending OTP.', hideHeader: true, hideFooter: true });
     }
 };
 
@@ -131,7 +141,7 @@ const verifyOtp = async (req, res) => {
             name,
             email,
             password,
-            phone, hideHeader: true
+            phone, hideHeader: true, hideFooter: true
         });
     }
 
@@ -141,7 +151,7 @@ const verifyOtp = async (req, res) => {
 
     if (currentTime - storedOtp.timestamp > otpExpiryTime) {
         delete otpStorage[email]; // Remove expired OTP
-        return res.render('user/register', { message: "OTP expired, Register user again", hideHeader: true });
+        return res.render('user/register', { message: "OTP expired, Register user again", hideHeader: true, hideFooter: true });
     }
 
     // Check if OTP matches
@@ -168,14 +178,14 @@ const verifyOtp = async (req, res) => {
             name,
             email,
             password,
-            phone, hideHeader: true
+            phone, hideHeader: true, hideFooter: true
         });
     }
 };
 
 // Load registration page
 const loadRegister = (req, res) => {
-    res.render('user/register', { hideHeader: true })
+    res.render('user/register', { hideHeader: true, hideFooter: true })
 }
 
 // Load OTP verification page
@@ -185,19 +195,20 @@ const loadOtpPage = (req, res) => {
 }
 
 const loadLogin = async (req, res) => {
-    res.render('user/login', { hideHeader: true })
+    res.render('user/login', { hideHeader: true, hideFooter: true })
 }
 const loginUser = async (req, res) => {
     let { email, password } = req.body;
     let user = await User.findOne({ email });
     let products = await Product.find({ isListed: true });
     let categories = await Category.find();
+    let discountedCategories = await Category.find({categoryDiscount: {$gt: 0}}).limit(2)
 
     if (!user) {
         res.render('user/login', {
             message2: "User not Existing!",
             enteredEmail: email,
-            hideHeader: true // Pass back the email
+            hideHeader: true, hideFooter: true // Pass back the email
         });
         return false;
     }
@@ -208,22 +219,23 @@ const loginUser = async (req, res) => {
         res.render('user/login', {
             message2: "Password is Incorrect!",
             enteredEmail: email, // Pass back the email
-            hideHeader: true
+            hideHeader: true, hideFooter: true
         });
     } else if (user.isBlocked) {
         res.render('user/login', {
             message2: "You are blocked by the admin",
             enteredEmail: email // Pass back the email
-            , hideHeader: true
+            , hideHeader: true, hideFooter: true
         });
     } else {
         req.session.user = true;
         req.session.email = email;
+        
         res.render('user/home', {
             products,
             email: req.session.email,
             user,
-            categories
+            categories, discountedCategories,
         });
     }
 };
@@ -241,11 +253,13 @@ const googleCallback = async (req, res) => {
         // Optionally, fetch data for rendering the home page
         const products = await Product.find({ isListed: true });
         const categories = await Category.find();
+        let discountedCategories = await Category.find({categoryDiscount: {$gt: 0}}).limit(2)
 
-        res.render('user/home', { products, email: req.session.email, user, categories });
+
+        res.render('user/home', { products, email: req.session.email, user, categories, discountedCategories });
     } catch (error) {
         console.error("Error during Google callback: ", error);
-        res.render('user/login', { message2: "Google login failed. Please try again.", hideHeader: true });
+        res.render('user/login', { message2: "Google login failed. Please try again.", hideHeader: true, hideFooter: true });
     }
 };
 
@@ -274,11 +288,16 @@ const loadHome = async (req, res) => {
     let products = await Product.find({ isListed: true });
     let categories = await Category.find();
 
+    let discountedCategories = await Category.find({categoryDiscount: {$gt: 0}}).limit(2)
+
+    
+
     res.render('user/home', {
         products,
         email: req.session.email,
         user,
-        categories
+        categories,
+        discountedCategories
     });
 };
 
@@ -286,7 +305,7 @@ const loadHome = async (req, res) => {
 const logoutUser = (req, res) => {
     if (req.session.user) {
         req.session.destroy()
-        res.render('user/login', { message: "logged out Successfully", hideHeader: true })
+        res.render('user/login', { message: "logged out Successfully", hideHeader: true, hideFooter: true })
     }
 }
 
@@ -368,7 +387,7 @@ const loadCategory = async (req, res) => {
 }
 
 const loadforgotPassword = async (req, res) => {
-    res.render('user/forgotPassword', { hideHeader: true })
+    res.render('user/forgotPassword', { hideHeader: true, hideFooter: true })
 }
 
 const sendResetMail = async (req, res) => {
@@ -377,7 +396,7 @@ const sendResetMail = async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.render('user/forgotPassword', { message: 'User not found!', hideHeader: true });
+            return res.render('user/forgotPassword', { message: 'User not found!', hideHeader: true, hideFooter: true });
         }
 
         // Generate a reset token
@@ -414,7 +433,7 @@ const sendResetMail = async (req, res) => {
         res.render('user/forgotPassword', { message: 'Password reset email sent!' });
     } catch (error) {
         console.error(error);
-        res.status(500).render('user/forgotPassword', { message: 'An error occurred. Please try again.', hideHeader: true });
+        res.status(500).render('user/forgotPassword', { message: 'An error occurred. Please try again.', hideHeader: true, hideFooter: true });
     }
 }
 
@@ -434,7 +453,7 @@ const loadResetPassword = async (req, res) => {
         res.render('user/resetPassword', { message: null, email: user.email });
     } catch (error) {
         console.error(error);
-        res.render('user/resetPassword', { message: 'An error occurred. Please try again.', email: null, hideHeader: true });
+        res.render('user/resetPassword', { message: 'An error occurred. Please try again.', email: null, hideHeader: true, hideFooter: true });
     }
 }
 
@@ -453,10 +472,10 @@ const resetPassword = async (req, res) => {
         user.resetTokenExpiry = null;
         await user.save();
 
-        res.render('user/login', { message: 'Password reset successful! Please log in.', message2: null, user, hideHeader: true });
+        res.render('user/login', { message: 'Password reset successful! Please log in.', message2: null, user, hideHeader: true, hideFooter: true });
     } catch (error) {
         console.error(error);
-        res.render('user/resetPassword', { message: 'An error occurred. Please try again.', email, hideHeader: true });
+        res.render('user/resetPassword', { message: 'An error occurred. Please try again.', email, hideHeader: true, hideFooter: true });
     }
 }
 
@@ -475,10 +494,10 @@ const loadProducts = async (req, res) => {
 const loadProfile = async (req, res) => {
     let userEmail = req.session.email
     let user = await User.findOne({ email: userEmail })
-    let orders = await Order.find({userId: user.userId})
-    console.log(orders);
-    
-    res.render('user/profile', { user, orders })
+
+    let wallet = await Wallet.findOne({userId: user.userId})
+    let walletAmount = wallet.amountAvailable
+    res.render('user/profile', { user, walletAmount })
 }
 
 const loadEditProfile = async (req, res) => {
@@ -490,9 +509,8 @@ const loadEditProfile = async (req, res) => {
 const postAddress = async (req, res) => {
     let userEmail = req.session.email
     const { line1, city, state, country, zipCode } = req.body;
-    
+
     let user = await User.findOne({ email: userEmail })
-    let orders = await Order.find({userId: user.userId})
     const addressExists = user.address.some((address) =>
         address.line1 === line1 &&
         address.city === city &&
@@ -502,22 +520,28 @@ const postAddress = async (req, res) => {
     );
 
     if (addressExists) {
-        return res.render('user/profile', { message: "Address already exists" })
+        let orders = await Order.find({})
+        let wallet = await Wallet.findOne({userId: user.userId})
+        let walletAmount = wallet.amountAvailable
+        return res.render('user/profile', { message: "Address already exists", orders, walletAmount })
     }
 
     const newAddress = { line1, city, state, country, zipCode };
 
     user.address.push(newAddress)
     await user.save()
-
-    res.render('user/profile', { message: "Address added successfully ", user, orders })
+    let wallet = await Wallet.findOne({userId: user.userId})
+    let walletAmount = wallet.amountAvailable
+    res.render('user/profile', { message: "Address added successfully ", user, walletAmount })
 }
 
 const postProfile = async (req, res) => {
     let { name, email, phone } = req.body
     await User.updateOne({ email: req.session.email }, { $set: { name, email, phone } })
     let user = await User.findOne({ email: req.session.email })
-    res.render('user/profile', { message: "User details updated", user })
+    let wallet = await Wallet.findOne({userId: user.userId})
+    let walletAmount = wallet.amountAvailable
+    res.render('user/profile', { message: "User details updated", user, walletAmount })
 
 
 }
@@ -553,21 +577,55 @@ const postEditedAddress = async (req, res) => {
         }
     );
     let user = await User.findOne({ email: req.session.email })
+    let wallet = await Wallet.findOne({userId: user.userId})
+    let walletAmount = wallet.amountAvailable
 
-    res.render('user/profile', { message: "User Address updated", user })
+    res.render('user/profile', { message: "User Address updated", user, walletAmount })
 
 
 }
 
 const loadCart = async (req, res) => {
 
-    let user = await User.findOne({ email: req.session.email })
-    let cart = await Cart.findOne({ userId: user.userId })
-    let products = cart.products
+    try {
+        // Fetch user based on session email
+        const user = await User.findOne({ email: req.session.email }).lean();
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        // Fetch cart based on the user's ID
+        const cart = await Cart.findOne({ userId: user.userId }).lean();
+        if (!cart || !cart.products || cart.products.length === 0) {
+            return res.render('user/cart', {
+                user,
+                products: [],
+                message: "Your cart is empty!",
+            });
+        }
+
+        // Fetch stock for each product in the cart
+        const productsWithStock = await Promise.all(
+            cart.products.map(async (cartProduct) => {
+
+                const product = await Product.findOne({ name: cartProduct.productName, size: cartProduct.size }).lean();
+                return {
+                    ...cartProduct, // Cart-specific details (e.g., quantity)
+                    availableStock: product ? product.stock : 0, // Available stock from Product
+                };
+            })
+        );
+        console.log(productsWithStock);
+
+        // Render the cart page with user and product data
+        res.render('user/cart', { user, products: productsWithStock });
+    } catch (error) {
+        console.error("Error loading cart page:", error);
+        res.status(500).send("Internal Server Error");
+    }
+};
 
 
-    res.render('user/cart', { user, products })
-}
 
 const addToCart = async (req, res) => {
     let { productName, productSize, productQuantity } = req.query
@@ -593,7 +651,7 @@ const addToCart = async (req, res) => {
     } else {
 
 
-        let product = await Product.findOne({ name: productName }, { images: 1, price: 1, discount:1 })
+        let product = await Product.findOne({ name: productName }, { images: 1, price: 1, discount: 1 })
         let discount = product.discount || 0;
         let discountedPrice = product.price - ((discount / 100) * product.price);
         discountedPrice = Math.floor(discountedPrice);
@@ -637,82 +695,350 @@ const deleteProduct = async (req, res) => {
 }
 
 const loadCheckout = async (req, res) => {
+    try {
+        // Fetch user and cart details
+        const user = await User.findOne({ email: req.session.email }).lean();
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        const address = user.address?.[0] || null; // Get the first address or set to null if none
+        const updatedQuantities = JSON.parse(req.body.updatedQuantities);
+        console.log(updatedQuantities);
+
+        const cart = await Cart.findOne({ userId: user.userId }).lean();
+        console.log(cart);
+
+        await updatedQuantities.forEach(async (product) => {
+            const { id, quantity } = product; // Destructure `id` and `quantity`
+
+            // Find and update the product's quantity in the cart
+            await Cart.updateOne(
+                { "products._id": id }, // Match the product's `_id`
+                { $set: { "products.$.quantity": quantity } } // Update the quantity using the `$` operator
+            );
+        });
+
+        if (!cart || !cart.products || cart.products.length === 0) {
+            return res.render('user/checkout', {
+                address,
+                user,
+                products: [],
+                total: 0,
+                grandTotal: 0,
+                message: "Your cart is empty!",
+            });
+        }
+
+        // Calculate totals
+        const products = cart.products;
+        const total = products.reduce((sum, product) => sum + product.price * product.quantity, 0);
+        const grandTotal = total + 100; // Adding fixed shipping or additional cost
+        let coupons = await Coupon.find({availableAfter: {$lte: total}})
+
+        // Render the checkout page
+        res.render('user/checkout', {
+            address,
+            user,
+            products,
+            total,
+            grandTotal,
+            coupons
+        });
+    } catch (error) {
+        console.error("Error loading checkout page:", error);
+        res.status(500).send("Internal Server Error");
+    }
+};
+
+
+const placeOrder = async (req, res) => {
+    try {
+        const { name, email, phone, line1, city, state, country, zipCode, paymentMethod } = req.body;
+
+        // Ensure the user is logged in and session email is available
+        if (!req.session.email) {
+            return res.status(401).send("Unauthorized access. Please log in.");
+        }
+
+        // Fetch user and cart details
+        const user = await User.findOne({ email: req.session.email });
+        if (!user) {
+            return res.status(404).send("User not found.");
+        }
+
+        const cart = await Cart.findOne({ userId: user.userId });
+        if (!cart || !cart.products || cart.products.length === 0) {
+            return res.status(400).send("Cart is empty.");
+        }
+
+        // Get coupon details if a coupon ID is provided
+        const couponId = req.query.couponId;
+        let couponDiscount = 0;
+        if (couponId) {
+            const coupon = await Coupon.findOne({ couponId });
+            if (coupon) {
+                couponDiscount = coupon.discountAmount || 0;
+            } else {
+                return res.status(404).send("Invalid coupon ID.");
+            }
+        }
+
+        // Calculate order amount
+        const orderAmount =
+            cart.products.reduce((total, product) => total + product.price * product.quantity, 100) - couponDiscount;
+
+        // Handle "Cash On Delivery"
+        if (paymentMethod === "Cash on Delivery") {
+            const order = new Order({
+                userId: user.userId,
+                address: {
+                    name, phone, email,
+                    line1, state, city,
+                    country, zipCode,
+                },
+                products: cart.products,
+                paymentMethod,
+                orderAmount,
+                paymentStatus: "Pending",
+            });
+
+            // Save the order to the database
+            await order.save();
+
+            // Update product stock
+            for (const product of cart.products) {
+                const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
+                if (currentProduct) {
+                    const newStock = currentProduct.stock - product.quantity;
+                    if (newStock < 0) {
+                        return res.status(400).send(`Insufficient stock for ${product.productName}`);
+                    }
+                    await Product.updateOne(
+                        { name: product.productName, size: product.size },
+                        { $set: { stock: newStock } }
+                    );
+                }
+            }
+
+            // Clear the cart
+            await Cart.deleteOne({ userId: user.userId });
+
+            return res.render("user/home", {
+                message: "Your order has been placed successfully!",
+                user,
+                hideFooter: true,
+            });
+        }
+
+        // Handle online payment
+        const amountInPaise = Math.round(orderAmount * 100);
+        const razorpayOrder = await razorpay.orders.create({
+            amount: amountInPaise, // Convert to paise and round off
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+            notes: {
+                email: user.email,
+                phone: user.phone,
+            },
+        });
+
+        // Save the order details temporarily in the session (for online payment)
+        req.session.tempOrder = {
+            userId: user.userId,
+            address: {
+                name, phone, email,
+                line1, state, city,
+                country, zipCode,
+            },
+            products: cart.products,
+            paymentMethod,
+            orderAmount: amountInPaise,
+            razorpayOrderId: razorpayOrder.id,
+        };
+
+        res.render("user/payment", {
+            orderId: razorpayOrder.id,
+            amount: razorpayOrder.amount,
+            key: process.env.RAZORPAY_KEY_ID,
+            user,
+            hideFooter: true,
+        });
+    } catch (error) {
+        console.error("Error placing order:", error.message);
+        res.status(500).send("Error placing order. Please try again.");
+    }
+};
+
+
+
+
+const sort = async (req, res) => {
+    let { sort } = req.query
     let user = await User.findOne({ email: req.session.email })
-    let address = user.address[0]
 
-    let cart = await Cart.findOne({ userId: user.userId })
-    let products = cart.products
-    let total = 0;
-
-    products.forEach(product => {
-        total += product.price * product.quantity;
-    });
-
-    let grandTotal = total + 100
-
-    res.render('user/checkout', { address, user, products, total, grandTotal })
-}
-
-const placeOrder = async(req, res)=>{
-    const { name, email, phone, line1, city, state, country, zipCode, paymentMethod } = req.body;
-    let user = await User.findOne({email: req.session.email})
-    let cart = await Cart.findOne({userId: user.userId})
-    console.log(cart.products);
-    
-    let newOrder = new Order({
-        userId: user.userId,
-        address:{
-            name, phone, email,
-            line1, state, city,
-            country, zipCode
-        },
-        products: cart.products,
-        paymentMethod
-    })
-
-    await newOrder.save()
-    cart.products.forEach(async (product)=>{
-        let currentProduct = await Product.findOne({name: product.productName, size: product.size})
-        let newStock = currentProduct.stock - product.quantity
-        
-        
-        await Product.updateOne({name: product.productName, size: product.size}, {$set: {stock: newStock}})
-        await Product.updateOne({name: product.productName, size: product.size}, {$inc: {orderCount: 1}})
-    })
-
-    await Cart.updateOne({userId: user.userId}, {$set: {products: []}})
-    let categories = await Category.find({})
-    res.render('user/home', {message: "Order was placed Successfully", user, categories})
-    
-}
-
-const sort = async(req, res)=>{
-    let {sort} = req.query
-    let user = await User.findOne({email: req.session.email})
-    
-    if(sort === 'price_asc'){
+    if (sort === 'price_asc') {
         let products = await Product.find({}).sort({ price: 1 });
-        res.render('user/listProducts', {products})
+        res.render('user/listProducts', { products, user })
 
-    }else if(sort === 'price_desc'){
+    } else if (sort === 'price_desc') {
         let products = await Product.find({}).sort({ price: -1 });
-        res.render('user/listProducts', {products})
+        res.render('user/listProducts', { products, user })
 
-    }else if(sort === 'newest'){
+    } else if (sort === 'newest') {
         let products = await Product.find({}).sort({ createdAt: -1 });
-        res.render('user/listProducts', {products})
+        res.render('user/listProducts', { products, user })
 
-    }else if(sort === 'popularity'){
+    } else if (sort === 'popularity') {
         let products = await Product.find({}).sort({ orderCount: -1 });
-        res.render('user/listProducts', {products})
+        res.render('user/listProducts', { products, user })
+
+    } else if (sort === 'stock') {
+        let products = await Product.find({ stock: { $gt: 0 } })
+        res.render('user/listProducts', { products, user })
 
     }
+
+}
+
+const cancelOrder = async (req, res) => {
+
+
+    let _id = req.params.id
+    const user = await User.findOne({ email: req.session.email })
+    let currOrders = await Order.findOne({ _id })
+    let refundAmount = currOrders.orderAmount - 100
     
+    
+    currOrders.products.forEach(async (product) => {
+        let currentProduct = await Product.findOne({ name: product.productName, size: product.size })
+        let newStock = currentProduct.stock + product.quantity
+
+
+        await Product.updateOne({ name: product.productName, size: product.size }, { $set: { stock: newStock } })
+    })
+
+    if (currOrders.paymentMethod === "Online Payment") {
+        let walletExist = await Wallet.findOne({ userId: user.userId })
+
+        if (walletExist) {
+            await Wallet.updateOne({ userId: user.userId }, { $inc: { amountAvailable: refundAmount } })
+        } else {
+            const newWallet = new Wallet({
+                userId: user.userId,
+                amountAvailable: refundAmount
+            })
+
+            await newWallet.save()
+        }
+    }
+
+    await Order.updateOne({ _id }, { $set: { deliveryStatus: "Order cancelled" } })
+    let orders = await Order.find({}).sort({ createdAt: -1 })
+    res.render('user/orders', { orders, message: "Order is cancelled" })
+}
+
+const loadOrders = async (req, res) => {
+    let user = await User.findOne({ email: req.session.email })
+    let orders = await Order.find({ userId: user.userId }).sort({ createdAt: -1 })
+
+    res.render('user/orders', { orders })
+
+
+}
+
+const orderDetails = async (req, res) => {
+    let orderId = req.params.id
+    let order = await Order.findOne({ orderId })
+    let products = order.products
+    let deliveryStatus = order.deliveryStatus
+    res.render('user/orderDetails', { products, deliveryStatus })
+}
+
+const verifyPayment = async (req, res) => {
+    try {
+        const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+        const generatedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+            .digest('hex');
+
+        if (generatedSignature !== razorpay_signature) {
+            return res.status(400).send("Payment verification failed.");
+        }
+
+        // Retrieve temporary order details from session
+        const tempOrder = req.session.tempOrder;
+        let actualAmount = tempOrder.orderAmount / 100
+        // Create a new order
+        const newOrder = new Order({
+            userId: tempOrder.userId,
+            address: tempOrder.address,
+            products: tempOrder.products,
+            paymentMethod: tempOrder.paymentMethod,
+            orderAmount: actualAmount,
+            razorpayOrderId: razorpay_order_id,
+            razorpayPaymentId: razorpay_payment_id,
+        });
+
+        await newOrder.save();
+
+        // Update stock and clear cart
+        await Promise.all(
+            tempOrder.products.map(async (product) => {
+                const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
+                await Product.updateOne(
+                    { name: product.productName, size: product.size },
+                    { $inc: { stock: -product.quantity, orderCount: 1 } }
+                );
+            })
+        );
+
+        await Cart.updateOne({ userId: tempOrder.userId }, { $set: { products: [] } });
+
+        // Clear tempOrder session
+        delete req.session.tempOrder;
+
+        res.render('user/home', {
+            message: "Order was placed successfully",
+            user: await User.findOne({ email: req.session.email }),
+            categories: await Category.find({}),
+        });
+    } catch (error) {
+        console.error("Error verifying payment:", error);
+        res.status(500).send("Payment verification failed. Please contact support.");
+    }
+};
+
+const returnProduct = async(req, res)=>{
+    let id = req.params.id
+
+    await Order.updateOne(
+        { "products._id": id }, // Match the Order with the specific product _id
+        { $set: { "products.$.returnStatus": true } } // Use the positional operator to update the field within the array
+    );
+
+    res.redirect('/user/orders')
+
+}
+
+const searchItem = async(req, res)=>{
+    try {
+        const query = req.query.q; // Get the search query from the URL
+        const products = await Product.find({ 
+            name: { $regex: query, $options: 'i' } // Case-insensitive search
+        });
+        res.render('user/searchedProducts', { products, query }); // Render results
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).send('Internal Server Error');
+    }
 }
 
 module.exports = {
     registerUser, loadRegister, verifyOtp, loadOtpPage, loadLogin, loginUser, loadHome, loadforgotPassword, sendResetMail,
     logoutUser, loadProductDetails, googleAuth, googleCallback, loadCategory, resendOtp, loadResetPassword, resetPassword, loadProducts,
-    loadProfile, loadEditProfile, postAddress, postProfile, loadEditAddress, postEditedAddress, loadCart, addToCart, deleteProduct, 
-    loadCheckout, placeOrder, sort
+    loadProfile, loadEditProfile, postAddress, postProfile, loadEditAddress, postEditedAddress, loadCart, addToCart, deleteProduct,
+    loadCheckout, placeOrder, sort, cancelOrder, loadOrders, orderDetails, verifyPayment, returnProduct, searchItem
 }

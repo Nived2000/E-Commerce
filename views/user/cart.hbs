@@ -26,8 +26,15 @@
                         </td>
                         <td class="align-middle">{{this.price}} ₹</td>
                         <td class="align-middle">
-                            {{this.quantity}}
+                            <div class="input-group">
+                                <button class="btn btn-sm btn-primary btn-decrement" data-id="{{this._id}}">-</button>
+                                <span class="mx-2 quantity-text">{{this.quantity}}</span>
+                                <button class="btn btn-sm btn-primary btn-increment" data-id="{{this._id}}"
+                                    data-stock="{{this.availableStock}}">+</button>
+
+                            </div>
                         </td>
+
                         <td class="align-middle">{{this.price}} ₹</td>
                         <td class="align-middle">
                             <a href="/user/delete-product/{{this._id}}" class="delete-link">
@@ -64,11 +71,17 @@
                         <h5>Total</h5>
                         <h5 id="grandTotal"></h5>
                     </div>
-                    <a href="/user/checkout"><button class="btn btn-block btn-primary font-weight-bold my-3 py-3">Proceed To Checkout</button></a>
+                    <form id="checkoutForm" action="/user/checkout" method="POST">
+                        <input type="hidden" name="updatedQuantities" id="updatedQuantities" value="">
+                        <button type="submit" class="btn btn-block btn-primary font-weight-bold my-3 py-3">Proceed To
+                            Checkout</button>
+                    </form>
+
                 </div>
             </div>
         </div>
     </div>
+    <input type="hidden" value="{{message}}" id="message">
 </div>
 <!-- Cart End -->
 
@@ -87,7 +100,7 @@
             // Calculate the subtotal by iterating through each product row
             document.querySelectorAll("tbody tr").forEach(function (row) {
                 const priceText = row.querySelector("td:nth-child(2)").innerText;
-                const quantityText = row.querySelector("td:nth-child(3)").innerText;
+                const quantityText = row.querySelector(".quantity-text").innerText;
 
                 const price = parseFloat(priceText.replace("₹", "").trim()) || 0;
                 const quantity = parseInt(quantityText.trim()) || 0;
@@ -99,7 +112,7 @@
             });
 
             // Fixed shipping cost
-            const shipping = 10;
+            const shipping = 100;
 
             // Calculate the total
             const total = subtotal + shipping;
@@ -120,32 +133,76 @@
             }
         }
 
-        document.querySelectorAll(".delete-link").forEach(function (link) {
-        link.addEventListener("click", function (event) {
-        event.preventDefault(); // Prevent default navigation
+        // Handle quantity increment and decrement
+        document.querySelectorAll(".btn-increment").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const quantityElement = this.parentElement.querySelector(".quantity-text");
+                let currentQuantity = parseInt(quantityElement.innerText.trim()) || 0;
+                const availableStock = parseInt(this.getAttribute("data-stock")) || 0;
 
-        const deleteUrl = this.href; // Get the URL from the anchor tag
-
-        // SweetAlert confirmation dialog
-        Swal.fire({
-            title: "Are you sure?",
-            text: "Do you want to remove this product from the cart?",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Yes, remove it!",
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Redirect to the delete URL
-                window.location.href = deleteUrl;
-            }
+                if (currentQuantity < availableStock) {
+                    // Increment the quantity
+                    quantityElement.innerText = currentQuantity + 1;
+                    updateCartSummary();
+                } else {
+                    // Disable the increment button if stock is reached
+                    Swal.fire("Maximum stock reached!");
+                    this.disabled = true;
+                }
+            });
         });
-    });
-});
+
+
+        document.querySelectorAll(".btn-decrement").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const quantityElement = this.parentElement.querySelector(".quantity-text");
+                let currentQuantity = parseInt(quantityElement.innerText.trim()) || 0;
+
+                if (currentQuantity > 1) {
+                    // Decrement the quantity
+                    quantityElement.innerText = currentQuantity - 1;
+
+                    // Optionally make an AJAX request to update the quantity in the backend
+                    // For example:
+                    // const productId = this.getAttribute("data-id");
+                    // $.post(`/user/update-quantity`, { id: productId, quantity: currentQuantity - 1 });
+
+                    updateCartSummary();
+                } else {
+                    // Optional: Show an alert if quantity cannot go below 1
+                    Swal.fire("Minimum quantity is 1!");
+                }
+            });
+        });
+
 
 
         // Update the cart summary on page load
         updateCartSummary();
     });
+
+    document.getElementById("checkoutForm").addEventListener("submit", function (event) {
+        const quantities = [];
+
+        document.querySelectorAll("tbody tr").forEach(function (row) {
+            const productId = row.querySelector(".btn-increment").getAttribute("data-id");
+            const quantityText = row.querySelector(".quantity-text").innerText;
+            const quantity = parseInt(quantityText.trim()) || 0;
+
+            quantities.push({ id: productId, quantity: quantity });
+        });
+
+        // Set the updated quantities as a JSON string in the hidden input field
+        document.getElementById("updatedQuantities").value = JSON.stringify(quantities);
+    });
+
+
+
+    const message = document.getElementById('message').value;
+    if (message) {
+        Swal.fire({
+            icon: 'info', // Customize icon as needed
+            text: message
+        });
+    }
 </script>

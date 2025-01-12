@@ -1,26 +1,51 @@
-const express = require('express')
-const router = express.Router()
-const adminController = require('../controller/adminController')
-const auth = require('../middlewares/auth')
-const upload = require('../middlewares/upload')
+const express = require('express');
+const router = express.Router();
+const adminController = require('../controller/adminController');
+const auth = require('../middlewares/auth');
+const upload = require('../middlewares/upload');
 
-router.get('/login', auth.isLoginAdmin, adminController.loadLogin)
-router.post('/login', adminController.loginAdmin)
-router.get('/dashboard', auth.checkSessionAdmin, adminController.loadDashboard)
-router.get('/blockUser/:id', adminController.blockUser)
-router.get('/unblockUser/:id', adminController.unblockUser)
-router.get('/products', auth.checkSessionAdmin, adminController.loadProducts)
-router.get('/addProducts', auth.checkSessionAdmin, adminController.loadAddProducts)
-router.post('/addProducts', upload.upload, adminController.addProduct);
-router.get('/unlistProduct/:id', adminController.unlistProduct)
-router.get('/listProduct/:id', adminController.listProduct)
-router.get('/editProduct/:id', adminController.loadEditProduct)
-router.post('/editProduct/:id', upload.upload, adminController.editProduct)
-router.get('/logout', auth.isLogin, adminController.logoutAdmin)
-router.get('/category', adminController.loadCategory)
-router.get('/addCategory', adminController.loadAddCategory)
-router.post('/addCategory', upload.uploadSingle, adminController.addCategory)
-router.get('/addProductToCategory/:id', adminController.loadCategoryManagement)
-router.get('/postProductToCategory', adminController.postProductToCategory)
-router.get('/deleteCategory/:id', adminController.deleteCategory)
+// Admin Login Routes
+router.get('/login', auth.isLoginAdmin, adminController.loadLogin);
+router.post('/login', adminController.loginAdmin);
+
+// Admin Dashboard
+router.get('/dashboard', auth.checkSessionAdmin, adminController.loadDashboard);
+
+// User Management
+router.get('/blockUser/:id', auth.checkSessionAdmin, adminController.blockUser);
+router.get('/unblockUser/:id', auth.checkSessionAdmin, adminController.unblockUser);
+
+// Product Management
+router.get('/products', auth.checkSessionAdmin, adminController.loadProducts);
+router.get('/addProducts', auth.checkSessionAdmin, adminController.loadAddProducts);
+router.post('/addProducts', auth.checkSessionAdmin, upload.upload, adminController.addProduct);
+router.get('/unlistProduct/:id', auth.checkSessionAdmin, adminController.unlistProduct);
+router.get('/listProduct/:id', auth.checkSessionAdmin, adminController.listProduct);
+router.get('/editProduct/:id', auth.checkSessionAdmin, adminController.loadEditProduct);
+router.post('/editProduct/:id', auth.checkSessionAdmin, upload.upload, adminController.editProduct);
+
+// Admin Logout
+router.get('/logout', auth.checkSessionAdmin, adminController.logoutAdmin);
+
+// Category Management
+router.get('/category', auth.checkSessionAdmin, adminController.loadCategory);
+router.get('/addCategory', auth.checkSessionAdmin, adminController.loadAddCategory);
+router.post('/addCategory', auth.checkSessionAdmin, upload.uploadSingle, adminController.addCategory);
+router.get('/addProductToCategory/:id', auth.checkSessionAdmin, adminController.loadCategoryManagement);
+router.get('/addCategoryDicount/:id', auth.checkSessionAdmin, adminController.loadEditCategory)
+router.get('/postProductToCategory', auth.checkSessionAdmin, adminController.postProductToCategory);
+router.get('/deleteCategory/:id', auth.checkSessionAdmin, adminController.deleteCategory);
+router.post('/postDiscount/:id', auth.checkSessionAdmin, adminController.postDiscount )
+
+// Order Management
+router.get('/order', auth.checkSessionAdmin, adminController.listOrders);
+router.get('/mark-as-delivered/:id', auth.checkSessionAdmin, adminController.deliveryMark);
+router.get('/mark-as-not-delivered/:id', auth.checkSessionAdmin, adminController.notdeliveredMark);
+router.get('/admin-order-cancel/:id', adminController.adminCancel)
+
+router.get('/addCoupon', adminController.loadAddCoupon)
+router.post('/addCoupon', adminController.postCoupon)
+router.get('/adminReturn', adminController.loadReturns)
+router.get('/return-confirm', adminController.markReturn)
+
 module.exports = router;

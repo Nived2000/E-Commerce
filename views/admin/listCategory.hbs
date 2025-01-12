@@ -30,6 +30,9 @@
           <a class="nav-link" href="/admin/category" style="color: #ffc800;">Category</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="/admin/order" style="color: #ffc800;">Orders</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="/admin/logout" style="color: #ffc800;">Logout</a>
         </li>
       </ul>
@@ -55,6 +58,7 @@
         <th scope="col">Sl. No</th>
         <th scope="col">Category Name</th>
         <th scope="col">Number of Products</th>
+        <th scope="col">Existing Discount</th>
         <th scope="col">Actions</th>
       </tr>
     </thead>
@@ -64,7 +68,12 @@
         <th scope="row">{{@index }}</th>
         <td>{{this.category}}</td>
         <td>{{this.products.length}}</td>
+        <td>{{this.categoryDiscount}}</td>
         <td>
+          <a href="/admin/addCategoryDicount/{{this.categoryId}}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+            title="Edit">
+            Add Discount
+          </a>
             <a href="#" 
            class="btn btn-sm btn-outline-danger delete-category-btn" 
            data-category-id="{{this.categoryId}}" 
@@ -77,6 +86,7 @@
             title="Edit">
             Add Products
           </a>
+          
         </td>
       {{/each}}
     </tbody>

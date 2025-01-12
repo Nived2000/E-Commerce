@@ -1,0 +1,68 @@
+<form id="razorpay-form" action="/user/verify-payment" method="POST">
+        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+        <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="{{orderId}}">
+        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+    </form>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        const options = {
+            key: "{{key}}",
+            amount: "{{amount}}",
+            currency: "INR",
+            name: "MULTI SHOP",
+            description: "Order Payment",
+            order_id: "{{orderId}}",
+            handler: function (response) {
+                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                document.getElementById('razorpay-form').submit();
+            },
+            theme: {
+                color: "#3399cc",
+            },
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+    </script>
+    <div class="center-container">
+    <a href="/user/home" class="btn-home">Go to Home Page</a>
+</div>
+
+    
+
+    <style>
+        .center-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full viewport height */
+    background-color: #f8f9fa; /* Optional background color */
+}
+
+
+        .btn-home {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 15px 30px;
+            background-color: #3399cc;
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 25px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-home:hover {
+            background-color: #287ba0;
+            transform: translateY(-3px);
+        }
+
+        .btn-home:active {
+            transform: translateY(2px);
+        }
+    </style>
