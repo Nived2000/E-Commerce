@@ -52,7 +52,16 @@
 
         <div class="col-lg-7 h-auto mb-30">
             <div class="h-100 bg-light p-30">
-                <h3>{{product.name}}</h3>
+                <div class="d-flex align-items-center">
+                    <h3 class="mb-0" id="productName">{{product.name}}</h3>
+                    <a id="addToWishlistLink" href="#" class="ms-auto">
+                        <button id="addToWishlistButton" class="btn btn-outline-primary">
+                            <i class="fa fa-heart"></i>
+                        </button>
+                    </a>
+                </div>
+
+
                 <div class="d-flex mb-3">
                     <div class="text-primary mr-2">
                         <small class="fas fa-star"></small>
@@ -103,28 +112,22 @@
                 {{#if product.stock}}
                 <div class="d-flex align-items-center mb-4 pt-2">
                     <div class="input-group quantity mr-3" style="width: 130px;">
-    <div class="input-group-btn">
-        <button class="btn btn-primary btn-minus">
-            <i class="fa fa-minus"></i>
-        </button>
-    </div>
-    <input 
-        type="number" 
-        class="form-control bg-secondary border-0 text-center"  
-        value="1" 
-        min="1" 
-        data-stock="{{product.stock}}" 
-        data-current="1"
-    >
-    <div class="input-group-btn">
-        <button class="btn btn-primary btn-plus">
-            <i class="fa fa-plus"></i>
-        </button>
-    </div>
-</div>
+                        <div class="input-group-btn">
+                            <button class="btn btn-primary btn-minus">
+                                <i class="fa fa-minus"></i>
+                            </button>
+                        </div>
+                        <input type="number" class="form-control bg-secondary border-0 text-center" value="1" min="1"
+                            data-stock="{{product.stock}}" data-current="1">
+                        <div class="input-group-btn">
+                            <button class="btn btn-primary btn-plus">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
 
 
-                    <a id="addToCartLink"  data-product-name="{{product.name}}">
+                    <a id="addToCartLink" data-product-name="{{product.name}}">
                         <button class="btn btn-primary px-3">
                             <i class="fa fa-shopping-cart mr-1"></i> Add To Cart
                         </button>
@@ -335,94 +338,115 @@
             });
         });
         // Get the input and buttons
-       document.addEventListener('DOMContentLoaded', () => {
-    const quantityInput = document.querySelector('input[type="number"]'); // Number input
-    const btnMinus = document.querySelector('.btn-minus');
-    const btnPlus = document.querySelector('.btn-plus');
-    const radioButtons = document.querySelectorAll('input[name="size"]');
-    const addToCartLink = document.getElementById('addToCartLink');
+        document.addEventListener('DOMContentLoaded', () => {
+            const quantityInput = document.querySelector('input[type="number"]'); // Number input
+            const btnMinus = document.querySelector('.btn-minus');
+            const btnPlus = document.querySelector('.btn-plus');
+            const radioButtons = document.querySelectorAll('input[name="size"]');
+            const addToCartLink = document.getElementById('addToCartLink');
+            const addToWishlistLink = document.getElementById('addToWishlistLink')
 
-    const stock = parseInt(quantityInput.getAttribute('data-stock')) 
+            const stock = parseInt(quantityInput.getAttribute('data-stock'))
 
-    // Set default value for quantity input
-    if (quantityInput) {
-        quantityInput.value = quantityInput.value || 1; // Default to 1 if empty
-    }
+            // Set default value for quantity input
+            if (quantityInput) {
+                quantityInput.value = quantityInput.value || 1; // Default to 1 if empty
+            }
 
-    // Decrease quantity
-    btnMinus?.addEventListener('click', () => {
-        let value = parseInt(quantityInput.value) || 1; // Fallback to 1 if invalid
-        if (value > 1) {
-            quantityInput.value = value - 1;
-            updateAddToCartLink();
-            updateButtonStates();
-        }
-    });
+            // Decrease quantity
+            btnMinus?.addEventListener('click', () => {
+                let value = parseInt(quantityInput.value) || 1; // Fallback to 1 if invalid
+                if (value > 1) {
+                    quantityInput.value = value - 1;
+                    updateAddToCartLink();
+                    updateButtonStates();
+                }
+            });
 
-    // Increase quantity
-    btnPlus?.addEventListener('click', () => {
-        let value = parseInt(quantityInput.value) || 1; // Fallback to 1 if invalid
-        if (value < stock) { // Ensure quantity does not exceed stock
-            quantityInput.value = value + 1;
-            updateAddToCartLink();
-            updateButtonStates();
-        }
-    });
+            // Increase quantity
+            btnPlus?.addEventListener('click', () => {
+                let value = parseInt(quantityInput.value) || 1; // Fallback to 1 if invalid
+                if (value < stock) { // Ensure quantity does not exceed stock
+                    quantityInput.value = value + 1;
+                    updateAddToCartLink();
+                    updateButtonStates();
+                }
+            });
 
-    // Update href whenever the quantity input value changes
-    quantityInput.addEventListener('input', () => {
-        updateAddToCartLink();
-        updateButtonStates();
-    });
+            // Update href whenever the quantity input value changes
+            quantityInput.addEventListener('input', () => {
+                updateAddToCartLink();
+                updateButtonStates();
+            });
 
-    // Listen for changes to the radio buttons
-    radioButtons.forEach(radio => {
-        radio.addEventListener('change', () => {
-            updateAddToCartLink();
+            // Listen for changes to the radio buttons
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    updateAddToCartLink();
+                    updateButtonStates();
+                });
+            });
+
+            // Function to update the Add to Cart link
+            function updateAddToCartLink() {
+                const selectedSize = document.querySelector('input[name="size"]:checked')?.value;
+                const productName = addToCartLink.getAttribute('data-product-name');
+                const productQuantity = parseInt(quantityInput.value) || 1; // Ensure quantity is valid
+
+                if (selectedSize) {
+                    addToCartLink.href = `/user/addToCart?productName=${encodeURIComponent(productName)}&productSize=${encodeURIComponent(selectedSize)}&productQuantity=${encodeURIComponent(productQuantity)}`;
+                }
+            }
+
+            // Function to update button states based on stock and quantity
+            function updateButtonStates() {
+                const current = parseInt(quantityInput.value);
+
+                // Disable "+" button if quantity equals stock
+                btnPlus.disabled = current >= stock;
+
+                // Disable "-" button if quantity is at minimum
+                btnMinus.disabled = current <= 1;
+            }
+
+            // Handle Add to Cart button click
+            addToCartLink.addEventListener('click', function (e) {
+                const selectedSize = document.querySelector('input[name="size"]:checked')?.value;
+
+                if (!selectedSize) {
+                    e.preventDefault(); // Prevent navigation if size not selected
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Size Not Selected',
+                        text: 'Please select a size before adding the item to your cart.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+
+            addToWishlistLink.addEventListener('click', function (e) {
+                const selectedSize = document.querySelector('input[name="size"]:checked');
+                const productName = document.getElementById('productName').textContent;
+
+                if (!selectedSize) {
+                    // Show alert if no size is selected
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Oops!',
+                        text: 'Please choose a size before adding to the wishlist.',
+                    });
+                } else {
+                    // Redirect to the wishlist link with query parameters
+                    const sizeValue = selectedSize.value;
+                    const wishlistLink = `/user/addToWishlist/{{product.productId}}?size=${encodeURIComponent(sizeValue)}&productName=${encodeURIComponent(productName)}`;
+                    window.location.href = wishlistLink;
+                }
+            })
+
+
+            // Initial button state update
             updateButtonStates();
         });
-    });
-
-    // Function to update the Add to Cart link
-    function updateAddToCartLink() {
-        const selectedSize = document.querySelector('input[name="size"]:checked')?.value;
-        const productName = addToCartLink.getAttribute('data-product-name');
-        const productQuantity = parseInt(quantityInput.value) || 1; // Ensure quantity is valid
-
-        if (selectedSize) {
-            addToCartLink.href = `/user/addToCart?productName=${encodeURIComponent(productName)}&productSize=${encodeURIComponent(selectedSize)}&productQuantity=${encodeURIComponent(productQuantity)}`;
-        }
-    }
-
-    // Function to update button states based on stock and quantity
-    function updateButtonStates() {
-        const current = parseInt(quantityInput.value);
-
-        // Disable "+" button if quantity equals stock
-        btnPlus.disabled = current >= stock;
-
-        // Disable "-" button if quantity is at minimum
-        btnMinus.disabled = current <= 1;
-    }
-
-    // Handle Add to Cart button click
-    addToCartLink.addEventListener('click', function (e) {
-        const selectedSize = document.querySelector('input[name="size"]:checked')?.value;
-
-        if (!selectedSize) {
-            e.preventDefault(); // Prevent navigation if size not selected
-            Swal.fire({
-                icon: 'warning',
-                title: 'Size Not Selected',
-                text: 'Please select a size before adding the item to your cart.',
-                confirmButtonText: 'OK'
-            });
-        }
-    });
-
-    // Initial button state update
-    updateButtonStates();
-});
 
 
 

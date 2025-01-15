@@ -10,6 +10,27 @@
                 </h5>
                 <div class="bg-light p-30 mb-5">
                     <div class="row">
+                        <div class="col-12">
+                            <h4>Choose Existing Address</h4>
+                            <div class="address-cards d-flex flex-wrap">
+                                {{#each address}}
+                                <div class="card address-card m-2" data-id="{{this._id}}"
+                                    style="cursor: pointer; width: 18rem; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Address #{{increment @index }}</h5>
+                                        <p class="card-text">
+                                            {{this.line1}}<br>
+                                            {{this.city}}, {{this.state}}, {{this.country}}<br>
+                                            ZIP: {{this.zipCode}}
+                                        </p>
+                                    </div>
+                                </div>
+                                {{/each}}
+                            </div>
+                        </div>
+
+                        <h4 class="mt-4 mb-4">Or Enter Manually</h4>
+                        <!-- Form fields to populate when an address is selected -->
                         <div class="col-md-6 form-group">
                             <label>Full Name</label>
                             <input class="form-control" type="text" name="name" value="{{user.name}}" required>
@@ -24,27 +45,28 @@
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Address Line 1</label>
-                            <input class="form-control" type="text" name="line1" value="{{address.line1}}" required>
+                            <input class="form-control" type="text" name="line1" required>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>City</label>
-                            <input class="form-control" type="text" name="city" value="{{address.city}}" required>
+                            <input class="form-control" type="text" name="city" required>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>State</label>
-                            <input class="form-control" type="text" name="state" value="{{address.state}}" required>
+                            <input class="form-control" type="text" name="state" required>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>Country</label>
-                            <input class="form-control" type="text" name="country" value="{{address.country}}" required>
+                            <input class="form-control" type="text" name="country" required>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>ZIP Code</label>
-                            <input class="form-control" type="text" name="zipCode" value="{{address.zipCode}}" required>
+                            <input class="form-control" type="text" name="zipCode" required>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <!-- Order Summary -->
             <div class="col-lg-4">
@@ -82,6 +104,38 @@
                     </div>
                 </div>
 
+                <!-- Use Wallet Amount -->
+                <div class="mb-5">
+                    <h5 class="section-title position-relative text-uppercase mb-3">
+                        <span class="bg-secondary pr-3">Use Wallet Amount</span>
+                    </h5>
+                    <div class="bg-light p-30">
+                        <div class="d-flex justify-content-between">
+                            <h6>Wallet Balance</h6>
+                            <h6 id="walletBalance">{{wallet.amountAvailable}} ₹</h6>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label for="walletUsage">Amount to Use</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control rounded-start" id="walletUsage"
+                                    name="walletUsage" min="0" max="{{wallet.amountAvailable}}" value="0"
+                                    placeholder="Enter amount">
+                                <button class="btn btn-primary rounded-end px-4" type="button" id="useWalletButton"
+                                    style="font-weight: bold;">
+                                    Use
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <h6 class="font-weight-medium">After Wallet Discount</h6>
+                            <h6 class="font-weight-medium" id="afterWalletDiscount">{{grandTotal}} ₹</h6>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
                 <!-- Apply Coupon -->
                 <div class="mb-5">
                     <h5 class="section-title position-relative text-uppercase mb-3">
@@ -94,7 +148,7 @@
                                 <option value="" selected disabled>Select a coupon</option>
                                 {{#each coupons}}
                                 <option value="{{this.couponId}}" data-discount="{{this.discountAmount}}">
-                                     {{this.couponName}} 
+                                    {{this.couponName}}
                                 </option>
                                 {{/each}}
                             </select>
@@ -132,6 +186,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </form>
 </div>
@@ -142,29 +197,98 @@
         const couponSelect = document.getElementById('couponSelect');
         const discountAmountEl = document.getElementById('discountAmount');
         const updatedGrandTotalEl = document.getElementById('updatedGrandTotal');
+        const walletUsageInput = document.getElementById('walletUsage');
+        const afterWalletDiscountEl = document.getElementById('afterWalletDiscount');
+        const walletBalanceEl = document.getElementById('walletBalance');
         const grandTotalInput = document.querySelector('input[name="grandTotal"]');
         const form = document.querySelector('form[action="/user/place-order"]');
+        const useWalletButton = document.getElementById('useWalletButton');
 
         let originalGrandTotal = parseFloat(grandTotalInput.value);
+        let walletBalance = parseFloat(walletBalanceEl.textContent.replace('₹', '').trim());
 
-        couponSelect.addEventListener('change', () => {
+        // Function to calculate and update totals
+        const updateTotals = () => {
             const selectedOption = couponSelect.options[couponSelect.selectedIndex];
-            const discount = parseFloat(selectedOption.getAttribute('data-discount')) || 0;
-            const newGrandTotal = originalGrandTotal - discount;
+            const couponDiscount = parseFloat(selectedOption.getAttribute('data-discount')) || 0;
+            const walletDiscount = parseFloat(walletUsageInput.value) || 0;
+
+            // Ensure wallet discount does not exceed the balance
+            if (walletDiscount > grandTotalInput) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Wallet Usage',
+                    text: 'The wallet amount cannot exceed the cart total. You have to pay a minimum of 1 Re!',
+                    confirmButtonText: 'OK',
+                }).then(() => {
+                    walletUsageInput.value = walletBalance; // Reset wallet usage to the balance
+                });
+                return;
+            }
+
+
+            let newGrandTotal = originalGrandTotal - couponDiscount - walletDiscount;
+
+            // Ensure total doesn't go below 0
+            newGrandTotal = Math.max(newGrandTotal, 0);
 
             // Update the UI
-            discountAmountEl.textContent = `${discount} ₹`;
+            discountAmountEl.textContent = `${couponDiscount} ₹`;
+            afterWalletDiscountEl.textContent = `${newGrandTotal} ₹`;
             updatedGrandTotalEl.textContent = `${newGrandTotal} ₹`;
             grandTotalInput.value = newGrandTotal;
+        };
+
+        // Event listener for coupon selection
+        couponSelect.addEventListener('change', () => {
+            updateTotals();
         });
 
+        // Event listener for wallet usage
+        useWalletButton.addEventListener('click', (event) => {
+            event.preventDefault(); // Prevent default button behavior
+            updateTotals();
+        });
+
+        // Form submission logic
         form.addEventListener('submit', (event) => {
             const selectedCouponId = couponSelect.value;
             if (selectedCouponId) {
-                // Append coupon ID as a query parameter to the form action
                 const baseAction = form.getAttribute('action');
-                form.setAttribute('action', `${baseAction}?couponId=${encodeURIComponent(selectedCouponId)}`);
+                form.setAttribute(
+                    'action',
+                    `${baseAction}?couponId=${encodeURIComponent(selectedCouponId)}&walletUsage=${encodeURIComponent(walletUsageInput.value)}`
+                );
             }
         });
     });
+
+    // Add event listener to all address cards
+    // Event listener to handle address card selection
+    // Event listener to handle address card selection
+    document.querySelectorAll('.address-card').forEach(card => {
+        card.addEventListener('click', function () {
+
+            const cardText = this.querySelector('.card-text').innerText;
+
+            // Extract city, state, country, and zip code
+            const lines = cardText.split('\n'); // Split the text by newlines
+            const line1 = lines[0].trim(); // First line is the line1
+            const secondLine = lines[1].split(','); // Second line contains city, state, and country
+            const city = secondLine[0].trim();
+            const state = secondLine[1].trim();
+            const country = secondLine[2].trim();
+            const zipCode = lines[2].split(':')[1].trim(); // ZIP is on the last line
+
+
+            // Populate the form inputs with the selected address data
+            document.querySelector('input[name="line1"]').value = line1;
+            document.querySelector('input[name="city"]').value = city;
+            document.querySelector('input[name="state"]').value = state;
+            document.querySelector('input[name="country"]').value = country;
+            document.querySelector('input[name="zipCode"]').value = zipCode;
+        });
+    });
+
+
 </script>

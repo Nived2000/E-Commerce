@@ -43,9 +43,11 @@ router.get('/mark-as-delivered/:id', auth.checkSessionAdmin, adminController.del
 router.get('/mark-as-not-delivered/:id', auth.checkSessionAdmin, adminController.notdeliveredMark);
 router.get('/admin-order-cancel/:id', adminController.adminCancel)
 
-router.get('/addCoupon', adminController.loadAddCoupon)
+router.get('/addCoupon', auth.checkSessionAdmin,adminController.loadAddCoupon)
 router.post('/addCoupon', adminController.postCoupon)
-router.get('/adminReturn', adminController.loadReturns)
-router.get('/return-confirm', adminController.markReturn)
+router.get('/adminReturn', auth.checkSessionAdmin,adminController.loadReturns)
+router.get('/return-confirm', auth.checkSessionAdmin,adminController.markReturn)
+router.get('/salesReport', auth.checkSessionAdmin, adminController.loadSales)
+router.get('/downloadReport/:format', adminController.downloadReport);
 
 module.exports = router;

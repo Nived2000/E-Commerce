@@ -5,22 +5,19 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="background-color: #3D464D;">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #3D464D;">
   <div class="container-fluid">
-    <div class="col-lg-4">
-                <a href="" class="text-decoration-none">
-                    <span style="color:#3D464D; background-color:#ffc800" class="h1 text-uppercase px-2">M</span>
-                    <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
-                </a>
-            </div>
-    <a class="navbar-brand" href="/" style="color: #ffc800;">ADMIN PANEL</a>
+    <a href="/" class="navbar-brand d-flex align-items-center">
+      <span style="color:#3D464D; background-color:#ffc800;" class="h1 text-uppercase px-2">M</span>
+      <span style="color:#ffc800; background-color:#3D464D;" class="h1 text-uppercase px-2">S</span>
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/admin/products" style="color: #ffc800;">Products</a>
+          <a class="nav-link active" href="/admin/products" style="color: #ffc800;">Products</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/admin/dashboard" style="color: #ffc800;">Users</a>
@@ -39,83 +36,65 @@
   </div>
 </nav>
 
-
 <!-- Add User Section -->
-<div class="d-flex flex-column align-items-center mt-4">
-  
+<div class="container text-center my-4">
+  <div class="row justify-content-center g-3">
+    <div class="col-md-3">
+      <a href="/admin/addCoupon">
+        <button class="btn btn-info w-100 py-2">Add Coupon</button>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/admin/adminReturn">
+        <button class="btn btn-success w-100 py-2 text-white">Manage Returns</button>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/admin/salesReport">
+        <button class="btn btn-dark w-100 py-2 text-white">Sales Report</button>
+      </a>
+    </div>
+  </div>
 </div>
-<div class="d-flex justify-content-center mt-4">
-    <a href="/admin/addCoupon">
-        <button class="btn btn-success btn-lg styled-btn">Add Coupon</button>
-    </a>
-</div>
-<div class="d-flex justify-content-center mt-4">
-    <a href="/admin/adminReturn">
-        <button class="btn btn-primary text-white btn-lg styled-btn">Manage Returns</button>
-    </a>
-</div>
-
 
 <!-- User Table -->
-<div class="container mt-4">
-    <div class="table-heading text-center">
-    <h2 class="text-uppercase">User Management</h2>
-    
+<div class="container mt-5">
+  <h2 class="text-center text-uppercase mb-4" style="color: #3D464D;">User Management</h2>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover custom-table align-middle text-center">
+      <thead class="table-dark">
+        <tr>
+          <th scope="col">Sl. No</th>
+          <th scope="col">Username</th>
+          <th scope="col">Email ID</th>
+          <th scope="col">Created At</th>
+          <th scope="col">Blocked Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each users}}
+        <tr class="{{#if @odd}}table-light{{else}}table-secondary{{/if}}">
+          <th scope="row">{{@index}}</th>
+          <td>{{this.name}}</td>
+          <td>{{this.email}}</td>
+          <td>{{this.createdAt}}</td>
+          <td>{{#if this.isBlocked}}Access Blocked{{else}}Access Allowed{{/if}}</td>
+          <td>
+            {{#if this.isBlocked}}
+            <button class="btn btn-sm btn-outline-success" onclick="confirmUnblockUser('{{this.userId}}')">Unblock</button>
+            {{else}}
+            <button class="btn btn-sm btn-outline-danger" onclick="confirmBlockUser('{{this.userId}}')">Block User</button>
+            {{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
   </div>
-  <table class="table table-bordered custom-table">
-    <thead>
-      <tr>
-        <th scope="col">Sl. No</th>
-        <th scope="col">Username</th>
-        <th scope="col">Email ID</th>
-        <th scope="col">Created At</th>
-        <th scope="col">Blocked Status</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each users}}
-      <tr>
-        <th scope="row">{{@index }}</th>
-        <td>{{this.name}}</td>
-        <td>{{this.email}}</td>
-        <td>{{this.createdAt}}</td>
-        {{#if this.isBlocked}}
-        <td>Access Blocked</td>
-        {{else}}
-        <td>Access Allowed</td>
-        {{/if}}
-        {{#if this.isBlocked}}
-        
-        <td>
-  <button 
-    class="btn btn-sm btn-outline-success" 
-    onclick="confirmUnblockUser('{{this.userId}}')" 
-    data-bs-toggle="tooltip" 
-    data-bs-placement="top" 
-    >
-    Unblock
-  </button>
-</td>
-{{else}}
-<td>
-  <button 
-    class="btn btn-sm btn-outline-danger" 
-    onclick="confirmBlockUser('{{this.userId}}')" 
-    data-bs-toggle="tooltip" 
-    data-bs-placement="top" 
-    title="Block this user">
-    Block User
-  </button>
-</td>
-
-{{/if}}
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
-  <input id="message" value="{{message}}" type="hidden">
 </div>
+
+<input id="message" value="{{message}}" type="hidden">
 
 <script>
   const message = document.getElementById('message').value;
@@ -129,12 +108,10 @@
     });
   }
 
-  
-
   function confirmBlockUser(userId) {
     Swal.fire({
       title: 'Are you sure?',
-      text: "You will be able to undo this action!",
+      text: "You can undo this action!",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ffc800',
@@ -143,24 +120,23 @@
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Redirect to the block user route
         window.location.href = `/admin/blockUser/${userId}`;
       }
     });
   }
+
   function confirmUnblockUser(userId) {
     Swal.fire({
       title: 'Are you sure?',
-      text: "You will be able to undo this action!",
+      text: "You can undo this action!",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ffc800',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, Unblock them!',
+      confirmButtonText: 'Yes, unblock them!',
       cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
-        // Redirect to the unblock user route
         window.location.href = `/admin/unblockUser/${userId}`;
       }
     });

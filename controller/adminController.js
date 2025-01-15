@@ -8,6 +8,10 @@ const Order = require('../model/orderModel')
 const Coupon = require('../model/couponModel');
 const { log } = require('handlebars');
 const Wallet = require('../model/walletModel');
+const PDFDocument = require('pdfkit'); // For PDF generation
+const excelJS = require('exceljs'); // For Excel generation
+const path = require('path');
+const fs = require('fs')
 
 const loadLogin = (req, res) => {
     res.render('admin/login', {hideHeader: true, hideFooter:true})
@@ -388,10 +392,198 @@ const postDiscount = async(req, res)=>{
     res.render('admin/listCategory', {categories, message:"Discount added!", hideHeader: true, hideFooter:true })
 }
 
+const loadSales = async (req, res) => {
+    let startDate = req.query.startDate;
+    let endDate = req.query.endDate;
+
+    let filter = req.query.filter; // Filter for predefined ranges like 1 day, 1 week, 1 month
+
+    if(startDate && endDate){
+        filter = null
+    }
+  
+    let currentDate = new Date();
+  
+    // Check for filter and set date range accordingly
+    if (filter) {
+      filter = parseInt(filter); // Convert filter to an integer
+  
+      if (filter === 1) {
+        // 1 Day
+        startDate = new Date(currentDate);
+        startDate.setHours(0, 0, 0, 0); // Start of today
+        endDate = new Date(currentDate);
+        endDate.setHours(23, 59, 59, 999); // End of today
+      } else if (filter === 7) {
+        // 1 Week
+        startDate = new Date(currentDate);
+        startDate.setDate(currentDate.getDate() - 7); // 7 days ago
+        startDate.setHours(0, 0, 0, 0); // Start of 7 days ago
+        endDate = new Date(currentDate);
+        endDate.setHours(23, 59, 59, 999); // End of today
+      } else if (filter === 30) {
+        // 1 Month
+        startDate = new Date(currentDate);
+        startDate.setDate(currentDate.getDate() - 30); // 30 days ago
+        startDate.setHours(0, 0, 0, 0); // Start of 30 days ago
+        endDate = new Date(currentDate);
+        endDate.setHours(23, 59, 59, 999); // End of today
+      } else {
+        return res.status(400).send('Invalid filter value');
+      }
+    }
+  
+    // If startDate and endDate are provided in the request, use them
+    if (startDate && endDate) {
+      try {
+        // Fetch orders within the specified range
+        const orders = await Order.find({
+          createdAt: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate),
+          }, deliveryStatus: "Delivered"
+        });
+  
+        let totalSales = 0;
+        let totalRevenue = 0;
+        let totalOrders = orders.length; // Total number of orders
+  
+        // Calculate totals
+        for (const order of orders) {
+          // Calculate total sales from products
+          order.products.forEach((product) => {
+            totalSales += product.price * product.quantity; // Assumes `price` and `quantity` are in product objects
+          });
+  
+          // Calculate total revenue
+          totalRevenue += order.orderAmount;
+        }
+  
+        // Calculate total discount
+        const totalDiscount = totalSales - totalRevenue;
+  
+        // Render the sales report page
+        return res.render('admin/salesReport', {
+          hideHeader: true,
+          hideFooter: true,
+          totalDiscount,
+          totalOrders,
+          totalSales,
+          totalRevenue,
+          orders
+        });
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        return res.status(500).send('Error generating sales report');
+      }
+    }
+  
+    // If no startDate and endDate, or filter was not provided, render the page with no data
+    res.render('admin/salesReport', {
+      hideHeader: true,
+      hideFooter: true,
+      message: "Enter a date range"
+    });
+  };
+
+  const downloadReport = async (req, res) => {
+    const { format } = req.params;
+
+    try {
+        // Fetch sales data from the database
+        const orders = await Order.find().lean();
+
+        if (format === 'pdf') {
+            // Generate PDF
+            const doc = new PDFDocument();
+            const filePath = path.join(__dirname, '..', 'public', 'reports', 'salesReport.pdf');
+
+            doc.pipe(fs.createWriteStream(filePath));
+
+            // Add Title
+            doc.fontSize(16).text('Sales Report', { align: 'center' });
+            doc.moveDown();
+
+            // Add Table Header
+            doc.fontSize(12).text('Sl. No', 50, doc.y, { width: 50, align: 'center' });
+            doc.text('Order ID', 100, doc.y, { width: 150, align: 'left' });
+            doc.text('Date', 250, doc.y, { width: 100, align: 'center' });
+            doc.text('Customer ID', 350, doc.y, { width: 150, align: 'center' });
+            doc.text('Total Amount (₹)', 500, doc.y, { width: 100, align: 'center' });
+            doc.moveDown();
+
+            // Add Table Rows
+            orders.forEach((order, index) => {
+                doc.fontSize(10).text(`${index + 1}`, 50, doc.y, { width: 50, align: 'center' });
+                doc.text(order._id, 100, doc.y, { width: 150, align: 'left' });
+                doc.text(new Date(order.createdAt).toLocaleDateString('en-GB'), 250, doc.y, { width: 100, align: 'center' });
+                doc.text(order.userId, 350, doc.y, { width: 150, align: 'center' });
+                doc.text(order.orderAmount, 500, doc.y, { width: 100, align: 'center' });
+                doc.moveDown();
+            });
+
+            doc.end();
+
+            await res.download(filePath, 'SalesReport.pdf', (err) => {
+                if (err) {
+                    console.error('Error in downloading PDF:', err);
+                }
+            });
+
+        } else if (format === 'excel') {
+            // Generate Excel
+            const workbook = new excelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Sales Report');
+
+            // Add Header Row
+            worksheet.columns = [
+                { header: 'Sl. No', key: 'sl_no', width: 10 },
+                { header: 'Order ID', key: 'orderId', width: 30 },
+                { header: 'Date (dd-mm-yyyy)', key: 'date', width: 20 },
+                { header: 'Customer ID', key: 'userId', width: 20 },
+                { header: 'Total Amount (₹)', key: 'totalAmount', width: 20 },
+            ];
+
+            // Add Data Rows
+            orders.forEach((order, index) => {
+                worksheet.addRow({
+                    sl_no: index + 1,
+                    orderId: order._id,
+                    date: new Date(order.createdAt).toLocaleDateString('en-GB'),
+                    userId: order.userId,
+                    totalAmount: order.orderAmount,
+                });
+            });
+
+            // Adjust Styling
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = { bold: true };
+            });
+
+            const filePath = path.join(__dirname, '..', 'public', 'reports', 'salesReport.xlsx');
+            await workbook.xlsx.writeFile(filePath);
+
+            await res.download(filePath, 'SalesReport.xlsx', (err) => {
+                if (err) {
+                    console.error('Error in downloading Excel:', err);
+                }
+            });
+        } else {
+            res.status(400).send('Invalid format');
+        }
+
+        res.redirect('/admin/dashboard')
+    } catch (error) {
+        console.error('Error generating report:', error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+  
+
 module.exports = {
     loadLogin, loginAdmin, loadDashboard, blockUser, unblockUser, loadProducts, loadAddProducts, addProduct,
     unlistProduct, listProduct, loadEditProduct, editProduct, logoutAdmin, loadAddCategory, loadCategory, addCategory,
     loadCategoryManagement, postProductToCategory, deleteCategory, listOrders, deliveryMark, notdeliveredMark, adminCancel, loadAddCoupon,
-    postCoupon, loadReturns, markReturn, loadEditCategory, postDiscount
+    postCoupon, loadReturns, markReturn, loadEditCategory, postDiscount, loadSales, downloadReport
 
 }

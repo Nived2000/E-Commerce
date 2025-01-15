@@ -73,7 +73,10 @@ router.post('/verify-payment', userController.verifyPayment);
 
 // Filter and sort route
 router.get('/filter', auth.checkSession, userController.sort);
-router.get('/returnProduct/:id', userController.returnProduct)
-router.get('/search', userController.searchItem)
+router.get('/returnProduct/:id', auth.checkSession, userController.returnProduct)
+router.get('/search', auth.checkSession, userController.searchItem)
+router.get('/wishlist', auth.checkSession, userController.loadWishlist)
+router.get('/addToWishlist/:id', auth.checkSession, userController.addToWishlist)
+router.get('/remove-from-wishlist/:id', auth.checkSession, userController.wishlistRemove)
 
 module.exports = router;

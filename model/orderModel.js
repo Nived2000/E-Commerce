@@ -30,6 +30,7 @@ const orderSchema = new mongoose.Schema({
     address: addressSchema,
     paymentMethod: { type: String, required: true},
     orderAmount: { type: Number, required: true },
+    walletAmount: { type: Number, required: true , default: 0},
     deliveryStatus: { type: String, default: "In Transit" },
     createdAt: { type: Date, default: Date.now }, // Timestamp of cart creation
     updatedAt: { type: Date, default: Date.now }, // Timestamp of last cart update
