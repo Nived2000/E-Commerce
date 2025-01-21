@@ -1,5 +1,6 @@
 <div id="particles-js" class="snow"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="/styles/listproducts.css">
 
 <div class="container-fluid pb-3">
     <div class="d-flex justify-content-between align-items-center mx-xl-5 mb-4">
@@ -8,67 +9,204 @@
             <span class="bg-secondary pr-3">All Products</span>
         </h2>
 
-        <!-- Sort Dropdown -->
-        
-        <div class="dropdown">
-            <button class="btn btn-primary font-weight-bold dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                Filter By
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
-                <li><a class="dropdown-item" href="/user/filter?sort=price_asc">Price: Low to High</a></li>
-                <li><a class="dropdown-item" href="/user/filter?sort=price_desc">Price: High to Low</a></li>
-                <li><a class="dropdown-item" href="/user/filter?sort=newest">Newest Arrivals</a></li>
-                <li><a class="dropdown-item" href="/user/filter?sort=popularity">Popularity</a></li>
-                <li><a class="dropdown-item" href="/user/filter?sort=stock">Only in Stock</a></li>
-            </ul>
-        </div>
+        <!-- Filters and Sort -->
+        <!-- Filters and Sort with Apply Button -->
+<div class="d-flex gap-2">
+    <!-- Filter By Categories -->
+    <div class="dropdown">
+        <button class="btn btn-primary font-weight-bold dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            Filter By
+        </button>
+        <ul class="dropdown-menu p-3" aria-labelledby="filterDropdown">
+            <li>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input filter-checkbox" value="MEN'S WEAR">
+                    MEN'S WEAR
+                </label>
+            </li>
+            <li>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input filter-checkbox" value="WOMEN'S WEAR">
+                    WOMEN'S WEAR
+                </label>
+            </li>
+            <li>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input filter-checkbox" value="KID'S WEAR">
+                    KID'S WEAR
+                </label>
+            </li>
+            <li>
+                <label class="form-check">
+                    <input type="checkbox" class="form-check-input filter-checkbox" value="ACCESSORIES">
+                    ACCESSORIES
+                </label>
+            </li>
+        </ul>
     </div>
 
-    <div class="row px-xl-5">
-        {{#each products}}
-        <div class="col-lg-3 col-md-4 col-sm-6 pb-1">
-            <div class="product-item bg-light mb-4 rounded shadow-sm">
-                <div class="product-img position-relative overflow-hidden">
-                    <img class="img-fluid w-100" src="/img/{{this.images.[0]}}" alt="Product Image">
-                    <div class="product-action d-flex align-items-center justify-content-center">
-                        <a class="btn btn-outline-dark btn-square mb-2" href=""><i class="fa fa-shopping-cart"></i></a>
-                        <a class="btn btn-outline-dark btn-square mb-2" href=""><i class="far fa-heart"></i></a>
-                        <a class="btn btn-outline-dark btn-square mb-2" href=""><i class="fa fa-sync-alt"></i></a>
-                        <a class="btn btn-outline-dark btn-square" href="/user/productDetail/{{this.productId}}"><i
-                                class="fa fa-search"></i></a>
-                    </div>
-                </div>
-                <div class="product-card text-center py-2">
-                    <a class="h5 text-decoration-none text-dark d-block text-truncate mb-3" href="">{{this.name}}</a>
-                    <div class="price-section mb-3">
-                        <h5 class="mb-1 text-dark"><strong>Price: </strong>{{this.price}} ₹</h5>
-                    </div>
-                    <div class="product-details mb-3">
-                        <p class="mb-1"><strong>Size:</strong> {{this.size}}</p>
-                        <p class="mb-1"><strong>Brand:</strong> {{this.brand}}</p>
-                        {{#if this.stock }}
-                        <p class="mb-1 text-success"><strong>In Stock</strong></p>
-                        {{else}}
-                        <p class="mb-1 text-danger"><strong>Out of Stock</strong></p>
-                        {{/if}}
-                    </div>
-                    <div class="d-flex align-items-center justify-content-center mb-1">
-                        <small class="fa fa-star text-primary mr-1"></small>
-                        <small class="fa fa-star text-primary mr-1"></small>
-                        <small class="fa fa-star text-primary mr-1"></small>
-                        <small class="fa fa-star text-primary mr-1"></small>
-                        <small class="fa fa-star text-primary mr-1"></small>
-                    </div>
-                </div>
+    <!-- Sort By -->
+    <!-- Sort By -->
+<div class="dropdown">
+    <button class="btn btn-primary font-weight-bold dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown"
+        aria-expanded="false">
+        Sort By
+    </button>
+    <div class="dropdown-menu p-3" aria-labelledby="sortDropdown">
+        <form id="sortOptionsForm">
+            <div class="form-check">
+                <input class="form-check-input sort-radio" type="radio" name="sortOption" id="sortPriceAsc" value="price_asc">
+                <label class="form-check-label" for="sortPriceAsc">
+                    Price: Low to High
+                </label>
             </div>
-        </div>
-        {{/each}}
+            <div class="form-check">
+                <input class="form-check-input sort-radio" type="radio" name="sortOption" id="sortPriceDesc" value="price_desc">
+                <label class="form-check-label" for="sortPriceDesc">
+                    Price: High to Low
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input sort-radio" type="radio" name="sortOption" id="sortNewest" value="newest">
+                <label class="form-check-label" for="sortNewest">
+                    Newest Arrivals
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input sort-radio" type="radio" name="sortOption" id="sortPopularity" value="popularity">
+                <label class="form-check-label" for="sortPopularity">
+                    Popularity
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input sort-radio" type="radio" name="sortOption" id="sortStock" value="stock">
+                <label class="form-check-label" for="sortStock">
+                    Only in Stock
+                </label>
+            </div>
+        </form>
     </div>
 </div>
 
+
+    <!-- Apply Button -->
+    <button class="btn btn-success font-weight-bold apply-filters">Apply</button>
+</div>
+
+    </div>
+
+    <!-- Products -->
+    <div class="row px-xl-5">
+    {{#each products}}
+<div class="col-lg-3 col-md-4 col-sm-6 pb-1">
+    <div class="product-item bg-light mb-4 rounded shadow-sm position-relative">
+        <a href="/user/productDetail/{{this.productId}}" class="stretched-link"></a>
+        <div class="product-img position-relative overflow-hidden {{#unless this.stock}}out-of-stock{{/unless}}">
+            <img class="img-fluid w-100" src="/img/{{this.images.[0]}}" alt="Product Image">
+            <div class="product-action d-flex align-items-center justify-content-center">
+                <a class="btn btn-outline-dark btn-square" href="/user/productDetail/{{this.productId}}"><i
+                        class="fa fa-search"></i></a>
+            </div>
+        </div>
+        <div class="product-card text-center py-2">
+            <a class="h5 text-decoration-none text-dark d-block text-truncate mb-3" href="">{{this.name}}</a>
+            <div class="price-section mb-3">
+                <h5 class="mb-1 text-dark"><strong>Price: </strong>{{this.price}} ₹</h5>
+            </div>
+            <div class="product-details mb-3">
+                <p class="mb-1"><strong>Size:</strong> {{this.size}}</p>
+                <p class="mb-1"><strong>Brand:</strong> {{this.brand}}</p>
+                {{#unless this.stock}}
+                <p class="mb-1 text-danger"><strong>Out of Stock</strong></p>
+                {{/unless}}
+            </div>
+            {{#if this.stock}}
+            <div class="d-flex align-items-center justify-content-center mb-1">
+                <small class="fa fa-star text-primary mr-1"></small>
+                <small class="fa fa-star text-primary mr-1"></small>
+                <small class="fa fa-star text-primary mr-1"></small>
+                <small class="fa fa-star text-primary mr-1"></small>
+                <small class="fa fa-star text-primary mr-1"></small>
+            </div>
+            {{/if}}
+        </div>
+    </div>
+</div>
+{{/each}}
+
+</div>
+
+
+
+</div>
+
+<!-- Pagination Controls -->
+<div class="d-flex justify-content-center">
+    <ul class="pagination">
+        {{#if (gt currentPage 1)}}
+        <li class="page-item">
+            <a class="page-link" href="/user/products?page={{subtract currentPage 1}}">Previous</a>
+        </li>
+        {{/if}}
+
+        {{#each (range 1 totalPages)}}
+        <li class="page-item {{#if (eq this ../currentPage)}}active{{/if}}">
+            <a class="page-link" href="/user/products?page={{this}}">{{this}}</a>
+        </li>
+        {{/each}}
+
+        {{#if (lt currentPage totalPages)}}
+        <li class="page-item">
+            <a class="page-link" href="/user/products?page={{add currentPage 1}}">Next</a>
+        </li>
+        {{/if}}
+    </ul>
+</div>
+
+
+
 <input type="hidden" value="{{message}}" id="message">
+
+<!-- JavaScript -->
 <script>
+    // Variables to track selected filters and sort options
+    let selectedCategories = [];
+    let selectedSortOption = '';
+
+    // Update selected categories when checkboxes are toggled
+    document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            selectedCategories = Array.from(document.querySelectorAll('.filter-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+        });
+    });
+
+    // Update selected sort option when a radio button is clicked
+    document.querySelectorAll('.sort-radio').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            selectedSortOption = e.target.value;
+        });
+    });
+
+    // Apply button functionality
+    document.querySelector('.apply-filters').addEventListener('click', () => {
+        const currentUrlParams = new URLSearchParams();
+
+        // Add selected categories to URL as an array
+        selectedCategories.forEach(category => {
+            currentUrlParams.append('category[]', category);
+        });
+
+        // Add selected sort option to URL
+        if (selectedSortOption) {
+            currentUrlParams.set('sort', selectedSortOption);
+        }
+
+        // Redirect with updated query parameters
+        window.location.href = `/user/filter?${currentUrlParams.toString()}`;
+    });
+
     const message = document.getElementById('message').value;
     if (message) {
         Swal.fire({
@@ -77,6 +215,9 @@
         });
     }
 </script>
+
+
+
 <!-- Required Bootstrap and Dependencies -->
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>

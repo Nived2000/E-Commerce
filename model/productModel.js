@@ -14,6 +14,7 @@ const productSchema = new mongoose.Schema({
     isAvailable: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
     coupon: { type: String, required: false},
+    category: { type: String, required: false},
     inCategory: { type: Boolean, required: false, default: false },
     orderCount: { type: Number, required: false, default:0 },
 });

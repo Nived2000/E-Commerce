@@ -1,3 +1,6 @@
+<div id="particles-js" class="snow"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>MY WISHLIST</h2>
@@ -7,6 +10,7 @@
             </button>
         </a>
     </div>
+
 
     <table class="table table-light table-borderless table-hover text-center mb-0">
         <thead class="thead-dark">
@@ -48,6 +52,7 @@
             </tr>
             {{/each}}
         </tbody>
+        <input type="hidden" value="{{message}}" id="message">
     </table>
 </div>
 
@@ -58,6 +63,16 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+
+    const message = document.getElementById('message').value;
+    if (message) {
+        Swal.fire({
+            icon: 'info',
+            text: message
+        });
+    }
+
+
     // Increment button logic
     document.querySelectorAll(".btn-increment").forEach(function (button) {
         button.addEventListener("click", function () {

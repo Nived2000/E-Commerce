@@ -12,11 +12,13 @@
   "dependencies": {
     "@panzoom/panzoom": "^4.5.1",
     "bcryptjs": "^2.4.3",
+    "connect-mongo": "^5.1.0",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.7",
     "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "express-handlebars": "^8.0.1",
+    "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
     "handlebars-helpers": "^0.10.0",
     "hbs": "^4.2.0",

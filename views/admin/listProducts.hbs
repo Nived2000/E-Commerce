@@ -13,7 +13,7 @@
         <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
       </a>
     </div>
-    
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
       aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -21,23 +21,36 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/admin/products" style="color: #ffc800;">Products</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products" style="color: #ffc800;">Products</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/dashboard" style="color: #ffc800;">Users</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard" style="color: #ffc800;">Users</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/category" style="color: #ffc800;">Category</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category" style="color: #ffc800;">Category</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/order" style="color: #ffc800;">Orders</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order" style="color: #ffc800;">Orders</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/logout" style="color: #ffc800;">Logout</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout" style="color: #ffc800;">Logout</a>
         </li>
       </ul>
     </div>
   </div>
+</nav>
+
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a class="text-dark ml-5 font-weight-semi-bold"
+                href="/user/category/{{category.categoryId}}">{{category.category}}</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {{product.name}}
+        </li>
+    </ol>
 </nav>
 
 
@@ -65,6 +78,7 @@
         <th scope="col">Description</th>
         <th scope="col">Brand</th>
         <th scope="col">Size</th>
+        <th scope="col">Category</th>
         <th scope="col">Stock</th>
         <th scope="col">Actions</th>
       </tr>
@@ -77,6 +91,7 @@
         <td>{{this.description}}</td>
         <td>{{this.brand}}</td>
         <td>{{this.size}}</td>
+        <td>{{this.category}}</td>
         <td>{{this.stock}}</td>
 
         {{#if this.isListed}}
@@ -110,6 +125,22 @@
     </tbody>
   </table>
   <input id="message" value="{{message}}" type="hidden">
+</div>
+<div class="pagination-container mb-5">
+    {{#if previousPage}}
+        <a href="/admin/products?page={{previousPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Previous</a>
+    {{/if}}
+    
+    <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
+
+    {{#if nextPage}}
+        <a href="/admin/products?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Next</a>
+    {{/if}}
+
+    <!-- Add option to go to the next page directly -->
+    {{#if nextPage}}
+        <a href="/admin/products?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-success pagination-btn">Go to Next Page</a>
+    {{/if}}
 </div>
 
 <!-- Centered Admin Logout Section -->

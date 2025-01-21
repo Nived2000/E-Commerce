@@ -13,6 +13,7 @@
         <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
       </a>
     </div>
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
       aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -20,19 +21,19 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/admin/products" style="color: #ffc800;">Products</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products" style="color: #ffc800;">Products</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/dashboard" style="color: #ffc800;">Users</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard" style="color: #ffc800;">Users</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/category" style="color: #ffc800;">Category</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category" style="color: #ffc800;">Category</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/order" style="color: #ffc800;">Orders</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order" style="color: #ffc800;">Orders</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/admin/logout" style="color: #ffc800;">Logout</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout" style="color: #ffc800;">Logout</a>
         </li>
       </ul>
     </div>

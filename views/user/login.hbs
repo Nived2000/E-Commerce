@@ -11,14 +11,24 @@
 
             <label for="email">Email</label>
             <input type="text" id="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}" required />
+            <p id="emailMessage" class="error-message"></p> <!-- Email error message -->
 
             <label for="password">Password</label>
-            <input id="password" type="password" placeholder="Enter Password" name="password" required />
+            <div class="password-container">
+                <input id="password" type="password" placeholder="Enter Password" name="password" required />
+                <span id="togglePassword" class="eye-icon">&#128065;</span> <!-- Eye icon for toggling password visibility -->
+            </div>
+            <p id="passwordMessage" class="error-message" style="color: red;"></p> <!-- Password error message -->
 
             <button type="submit" class="login-btn">Sign in</button>
-            <div class="links">
-                <a href="/user/forgot-password">Forgot Password?</a>
-                <a href="/user/register">Do not have an account?</a>
+            <div class="social-login">
+                <a href="/user/auth/google">
+                    <button type="button" class="google-login">Login with Google</button>
+                </a>
+            </div>
+            <div class="links mt-3">
+                <a href="/user/forgot-password">Forgot Password?  </a>
+                <a href="/user/register">Sign Up</a>
             </div>
             <input type="hidden" value="{{message2}}" id="message2">
             <input type="hidden" value="{{message}}" id="message">
@@ -27,49 +37,50 @@
 </main>
 
 <script>
-    // Display SweetAlert messages if needed
-    const message2 = document.getElementById('message2').value;
-    if (message2) {
-        Swal.fire({
-            icon: 'info', // Customize icon as needed
-            title: 'Note',
-            text: message2
-        });
+    // Function to display messages in <p> tags
+    function displayMessages() {
+        const message2 = document.getElementById('message2').value;
+        const message = document.getElementById('message').value;
+
+        // Display message2 if present
+        if (message2) {
+            const emailMessage = document.getElementById("emailMessage");
+            emailMessage.textContent = message2;
+        }
+
+        // Display message if present
+        if (message) {
+            const passwordMessage = document.getElementById("passwordMessage");
+            passwordMessage.textContent = message;
+        }
     }
 
-    const message = document.getElementById('message').value;
-    if (message) {
-        Swal.fire({
-            icon: 'success', // Customize icon as needed
-            text: message
-        });
-    }
+    // Call function to display messages
+    displayMessages();
 
     // Form Validation Function
     function formValidate() {
         const emailInput = document.getElementById("email");
         const password = document.getElementById("password").value;
+        const emailMessage = document.getElementById("emailMessage");
+        const passwordMessage = document.getElementById("passwordMessage");
+
+        // Clear previous messages
+        emailMessage.textContent = '';
+        passwordMessage.textContent = '';
 
         // Regex for valid email format
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
         // Validate email
         if (!emailPattern.test(emailInput.value)) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Invalid Email',
-                text: 'Please enter a valid email address!'
-            });
+            emailMessage.textContent = 'Please enter a valid email address!';
             return false;
         }
 
         // Validate password
         if (!password) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Invalid Password',
-                text: 'Password field cannot be empty!'
-            });
+            passwordMessage.textContent = 'Password field cannot be empty!';
             return false;
         }
 
@@ -77,8 +88,41 @@
         return true;
     }
 
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordField = document.getElementById('password');
+    togglePassword.addEventListener('click', function () {
+        // Toggle the password input type between "password" and "text"
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            togglePassword.textContent = '👁️'; // Change eye icon to indicate password is visible
+        } else {
+            passwordField.type = 'password';
+            togglePassword.textContent = '👁️‍🗨️'; // Change back to the original eye icon
+        }
+    });
+
     // Attach validation function to form submission
     document.getElementById("emailForm").onsubmit = function () {
         return formValidate();
     };
 </script>
+
+<style>
+    .password-container {
+        position: relative;
+    }
+
+    .eye-icon {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        cursor: pointer;
+    }
+
+    .error-message {
+        color: red;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+</style>

@@ -47,7 +47,7 @@
                                 <p class="mx-md-5 px-5 animate__animated animate__bounceIn">Lorem rebum magna amet lorem
                                     magna erat diam stet. Sadips duo stet amet amet ndiam elitr ipsum diam</p>
                                 <a class="btn btn-outline-light py-2 px-4 mt-3 animate__animated animate__fadeInUp"
-                                    href="#">Shop Now</a>
+                                    href="/user/category">Shop Now</a>
                             </div>
                         </div>
                     </div>
@@ -60,7 +60,7 @@
                 <div class="offer-text">
                     <h6 class="text-white text-uppercase">Save {{discountedCategories.[0].categoryDiscount}}% extra</h6>
                     <h3 class="text-white mb-3">{{discountedCategories.[0].category}}</h3>
-                    <a href="" class="btn btn-primary">Shop Now</a>
+                    <a href="/user/category/{{discountedCategories.[0].categoryId}}" class="btn btn-primary">Shop Now</a>
                 </div>
             </div>
             <div class="product-offer mb-30" style="height: 200px;">
@@ -68,7 +68,7 @@
                 <div class="offer-text">
                     <h6 class="text-white text-uppercase">Save {{discountedCategories.[1].categoryDiscount}}% extra</h6>
                     <h3 class="text-white mb-3">{{discountedCategories.[1].category}}</h3>
-                    <a href="" class="btn btn-primary">Shop Now</a>
+                    <a href="/user/category/{{discountedCategories.[1].categoryId}}" class="btn btn-primary">Shop Now</a>
                 </div>
             </div>
         </div>

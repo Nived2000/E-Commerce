@@ -1,0 +1,46 @@
+.product-item {
+    height: 500px; /* Adjust to your desired height */
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card {
+    flex-grow: 1; /* Ensures the product card takes up the remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Distributes space between product details and price */
+}
+.stretched-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 1; /* Ensures it covers the card content */
+}
+
+
+.product-img img {
+    height: 450px; /* Set a fixed height */
+    width: 100%; /* Ensure uniform width */
+    object-fit: cover; /* Maintain aspect ratio and fill the area */
+    border: 1px solid #ddd; /* Optional: Add a border for consistency */
+}
+
+.product-img.out-of-stock {
+    position: relative;
+    opacity: 0.6; /* Dim out-of-stock images */
+}
+
+.product-img.out-of-stock::after {
+    content: "Out of Stock"; /* Overlay text */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+}

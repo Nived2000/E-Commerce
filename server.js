@@ -9,12 +9,20 @@ const helpers = require('handlebars-helpers')(); // Load built-in helpers
 const connectDB = require('./db/config');
 const userRouter = require('./routes/user');
 const adminRouter = require('./routes/admin');
+const rateLimit = require('express-rate-limit');
 
 require('dotenv').config();
 require('./passport');
 
 const app = express();
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.',
+  headers: true, // Send rate limit info in the response headers
+});
 
+app.use(limiter);
 // Connect to the database
 connectDB();
 // Middleware
@@ -25,12 +33,32 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data (form
 app.use(express.json()); // Parse JSON data
 
 // Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }, // Use `true` in production with HTTPS
-}));
+
+const MongoStore = require('connect-mongo'); // For MongoDB session store
+
+app.use(
+    session({
+        secret: 'your-secret-key', // Replace with a strong secret
+        resave: false,
+        saveUninitialized: false,
+        store: MongoStore.create({
+            mongoUrl: 'mongodb://localhost:27017/eCommerceDB', // Replace with your DB URL
+        }),
+        cookie: {
+            maxAge: 1000 * 60 * 60 * 24, // 1 day
+            httpOnly: true, // Prevents JavaScript access to cookies
+        },
+    })
+);
+
+const noCache = (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+};
+
+app.use(noCache); // Apply to all routes or to specific routes that require it
 
 // Passport initialization
 app.use(passport.initialize());
@@ -60,22 +88,59 @@ const customHelpers = {
     return dateObj.toLocaleDateString('en-US', options);
   },
   equals: function (a, b) {
-    return a === b; // Return true if values are equal
+    return a === b;
   },
   multiply: function (price, quantity) {
-    return price * quantity; // Return the product of price and quantity
+    return price * quantity;
   },
   increment: function (index) {
-    return index + 1; // Increment the index (for 1-based indexing)
+    return index + 1;
   },
   ifEquals: function (a, b, options) {
     if (a === b) {
-      return options.fn(this); // Render content inside the block if values are equal
+      return options.fn(this);
     } else {
-      return options.inverse(this); // Render the `else` block content if values are not equal
+      return options.inverse(this);
     }
   },
+  pagination: function (currentPage, totalPages, options) {
+    let output = '';
+    for (let page = 1; page <= totalPages; page++) {
+        if (page === currentPage) {
+            output += `<li class="page-item active"><a class="page-link" href="/user/products?page=${page}">${page}</a></li>`;
+        } else {
+            output += `<li class="page-item"><a class="page-link" href="/user/products?page=${page}">${page}</a></li>`;
+        }
+    }
+    return new Handlebars.SafeString(output);
+},
+range: function (start, end) {
+  let result = [];
+  for (let i = start; i <= end; i++) {
+      result.push(i);
+  }
+  return result; // return the array of numbers
+},
+add: function (a, b) {
+  return a + b;
+},hasPrevious: function (page, options) {
+  if (page > 1) {
+      return options.fn(this); // If current page > 1, there's a previous page
+  } else {
+      return options.inverse(this); // Otherwise, no previous page
+  }
+},
+hasNext: function (page, totalPages, options) {
+  if (page < totalPages) {
+      return options.fn(this); // If current page < totalPages, there's a next page
+  } else {
+      return options.inverse(this); // Otherwise, no next page
+  }
+}
+
+
 };
+
 
 
 // View engine configuration

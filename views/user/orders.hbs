@@ -75,6 +75,24 @@
                 </tbody>
             </table>
         </div>
+    <div class="pagination-container">
+    {{#if previousPage}}
+        <a href="/user/orders?page={{previousPage}}&limit={{limit}}" class="btn btn-sm btn-outline-primary pagination-btn">Previous</a>
+    {{/if}}
+    
+    <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
+
+    {{#if nextPage}}
+        <a href="/user/orders?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-outline-primary pagination-btn">Next</a>
+    {{/if}}
+
+    <!-- Add option to go to the next page directly -->
+    {{#if nextPage}}
+        <a href="/user/orders?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-outline-warning pagination-btn">Go to Next Page</a>
+    {{/if}}
+</div>
+
+        
 
         <input type="hidden" value="{{message}}" id="message">
     </div>

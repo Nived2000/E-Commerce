@@ -39,7 +39,7 @@ const loginAdmin = async (req, res) => {
     } else {
         req.session.admin = true
         req.session.AdminEmail = email
-        res.redirect('/admin/dashboard')
+        res.redirect('/admin/dashboard' )
         res.end()
     }
 
@@ -47,7 +47,7 @@ const loginAdmin = async (req, res) => {
 
 const loadDashboard = async (req, res) => {
     let users = await User.find({ isAdmin: false })
-    res.render('admin/dashboard', { users, email: req.session.AdminEmail, hideHeader: true, hideFooter:true })
+    res.render('admin/dashboard', { users, email: req.session.AdminEmail, hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
 
 }
 
@@ -61,7 +61,7 @@ const blockUser = async (req, res) => {
             await User.updateOne({ userId: userID }, { $set: { isBlocked: true } })
         }
         let users = await User.find({ isAdmin: false })
-        res.render('admin/dashboard', { users, message: "User successfully blocked", hideHeader: true, hideFooter:true })
+        res.render('admin/dashboard', { users, message: "User successfully blocked", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
     }
 }
 
@@ -75,15 +75,48 @@ const unblockUser = async (req, res) => {
             await User.updateOne({ userId: userID }, { $set: { isBlocked: false } })
         }
         let users = await User.find({ isAdmin: false })
-        res.render('admin/dashboard', { users, message: "User successfully unblocked", hideHeader: true, hideFooter:true })
+        res.render('admin/dashboard', { users, message: "User successfully unblocked", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
     }
 }
 
 
 const loadProducts = async (req, res) => {
-    let products = await Product.find()
-    res.render('admin/listProducts', { products, hideHeader: true, hideFooter:true })
-}
+    // Default values for pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
+    // Calculate the number of products to skip (for pagination)
+    const skip = (page - 1) * limit;
+
+    try {
+        // Get the total count of products
+        const totalProducts = await Product.countDocuments();
+
+        // Fetch paginated products
+        const products = await Product.find()
+            .skip(skip)
+            .limit(limit);
+
+        // Calculate total number of pages
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        // Send the response with pagination details
+        res.render('admin/listProducts', {
+            products,
+            hideHeader: true,
+            hideFooter: true,
+            currentRoute: req.originalUrl,
+            page,
+            limit,
+            totalPages,
+            previousPage: page > 1 ? page - 1 : null,
+            nextPage: page < totalPages ? page + 1 : null,
+        });
+    } catch (error) {
+        console.error("Error loading products:", error);
+        res.status(500).send("An error occurred while loading products.");
+    }
+};
 
 const loadAddProducts = async (req, res) => {
     res.render('admin/addProduct', {hideHeader: true, hideFooter:true})
@@ -91,16 +124,26 @@ const loadAddProducts = async (req, res) => {
 
 const addProduct = async (req, res) => {
     try {
-        let { name, description, price, brand, size, stock, discount, coupon } = req.body;
-        let products = await Product.find()
+        // Destructure fields from the request body
+        let { name, description, price, brand, size, stock, discount, category } = req.body;
+        let products = await Product.find();
+
         // Check if the product already exists
-        let NAME = name.toUpperCase()
-        let productExist = await Product.findOne({ name: NAME, size })
+        let NAME = name.toUpperCase();
+        let productExist = await Product.findOne({ name: NAME, size });
+
         if (productExist) {
-            res.render('admin/listProducts', { message: "Product already exist", products,hideHeader: true, hideFooter:true });
-            return
+            res.render('admin/listProducts', { 
+                message: "Product already exists", 
+                products,
+                hideHeader: true, 
+                hideFooter: true, 
+                currentRoute: req.originalUrl 
+            });
+            return;
         } else {
-            const images = req.files.map(file => file.filename);
+            // Handle image files if provided
+            const images = req.files ? req.files.map(file => file.filename) : [];
 
             // Create a new product if it doesn't exist
             const newProduct = new Product({
@@ -112,22 +155,36 @@ const addProduct = async (req, res) => {
                 images,
                 discount,
                 stock,
-                coupon
+                category
             });
-
 
             // Save the new product to the database
             await newProduct.save();
 
+            // After saving, find the newly created product
+            let product = await Product.findOne({ name: NAME, size });
+
+            // Update the product's 'inCategory' field
+            await Product.updateOne({ productId: product.productId }, { $set: { inCategory: true } });
+
+            // Update the category with the new product
+            await Category.updateOne(
+                { category },
+                { $addToSet: { products: product.productId } } // Ensure the productId is correctly referenced
+            );
+
             res.redirect('/admin/products'); // Redirect after adding the product
         }
-
-
     } catch (error) {
         console.error(error);
-        res.render('admin/addProduct', { message: 'Error adding product', hideHeader: true, hideFooter:true });
+        res.render('admin/addProduct', { 
+            message: 'Error adding product', 
+            hideHeader: true, 
+            hideFooter: true 
+        });
     }
 };
+
 
 
 const unlistProduct = async (req, res) => {
@@ -143,7 +200,7 @@ const unlistProduct = async (req, res) => {
         }
     }
     let products = await Product.find()
-    res.render('admin/listProducts', { products, message: "Product removed from listing", hideHeader: true, hideFooter:true })
+    res.render('admin/listProducts', { products, message: "Product removed from listing", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
 }
 
 const listProduct = async (req, res) => {
@@ -155,36 +212,99 @@ const listProduct = async (req, res) => {
         }
     }
     let products = await Product.find()
-    res.render('admin/listProducts', { products, message: "Product added to listing", hideHeader: true, hideFooter:true })
+    res.render('admin/listProducts', { products, message: "Product added to listing", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
 }
 
 const loadEditProduct = async (req, res) => {
     let proID = req.params.id
     let product = await Product.findOne({ productId: proID })
-    res.render('admin/editProduct', { product, hideHeader: true, hideFooter:true })
+    res.render('admin/editProduct', { product, hideHeader: true, hideFooter:true})
 }
 
 const editProduct = async (req, res) => {
-    let proID = req.params.id
+    try {
+        const proID = req.params.id;
 
-    let { name, description, price, brand, size, stock, discount, coupon } = req.body;
-    const images = req.files.map(file => file.filename);
+        // Destructure fields from the request body
+        const { name, description, price, brand, size, stock, discount, category } = req.body;
+        const images = req.files ? req.files.map(file => file.filename) : [];
 
-    let productExist = await Product.findOne({ name, description, price, brand, size, stock, discount, coupon })
+        // Find the product by ID
+        let existingProduct = await Product.findOne({ productId: proID });
 
-    if (productExist) {
-        await Product.deleteOne({ productId: proID })
-        let products = await Product.find()
-        res.render('admin/listProducts', { products, message: "Product already exist", hideHeader: true, hideFooter:true })
-    } else {
-        await Product.updateOne({ productId: proID }, { $set: { name, description, price, brand, size, stock, discount, coupon } })
-        await Product.updateOne({ productId: proID }, { $push: { images: { $each: images } } })
-        let products = await Product.find()
-        res.render('admin/listProducts', { products, message: "Product edited Successfully", hideHeader: true, hideFooter:true })
+        if (!existingProduct) {
+            return res.status(404).send("Product not found");
+        }
+
+        // Check if any fields have changed (excluding images for now)
+        const changesMade = 
+            existingProduct.name !== name ||
+            existingProduct.description !== description ||
+            existingProduct.price !== price ||
+            existingProduct.brand !== brand ||
+            existingProduct.size !== size ||
+            existingProduct.stock !== stock ||
+            existingProduct.discount !== discount ||
+            existingProduct.category !== category;
+
+        // If changes are detected, update the product
+        if (changesMade) {
+            // Handle category change logic
+            if (existingProduct.category !== category) {
+                // Remove the product from the old category
+                await Category.updateOne(
+                    { category: existingProduct.category },
+                    { $pull: { products: existingProduct.productId } }
+                );
+
+                // Add the product to the new category
+                await Category.updateOne(
+                    { category },
+                    { $addToSet: { products: existingProduct.productId } }
+                );
+            }
+
+            // Update the product details
+            await Product.updateOne(
+                { productId: proID },
+                {
+                    $set: { name, description, price, brand, size, stock, discount, category },
+                }
+            );
+
+            // Push new images if provided
+            if (images.length > 0) {
+                await Product.updateOne(
+                    { productId: proID },
+                    { $push: { images: { $each: images } } }
+                );
+            }
+
+            let products = await Product.find();
+            res.render('admin/listProducts', {
+                products,
+                message: "Product edited successfully",
+                hideHeader: true,
+                hideFooter: true,
+                currentRoute: req.originalUrl,
+            });
+        } else {
+            let products = await Product.find();
+            res.render('admin/listProducts', {
+                products,
+                message: "No changes were made to the product",
+                hideHeader: true,
+                hideFooter: true,
+                currentRoute: req.originalUrl,
+            });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal server error");
     }
+};
 
 
-}
 
 const logoutAdmin = async (req, res) => {
     req.session.destroy();
@@ -194,7 +314,7 @@ const logoutAdmin = async (req, res) => {
 const loadCategory = async (req, res) => {
     let categories = await Category.find()
     console.log(categories);
-    res.render('admin/listCategory', { categories, hideHeader: true , hideFooter:true})
+    res.render('admin/listCategory', { categories, hideHeader: true , hideFooter:true, currentRoute: req.originalUrl})
 }
 
 const loadAddCategory = async (req, res) => {
@@ -222,7 +342,7 @@ const addCategory = async (req, res) => {
 
     await newCategory.save()
     let categories = await Category.find()
-    res.render('admin/listCategory', { categories, hideHeader: true, hideFooter:true })
+    res.render('admin/listCategory', { categories, hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
 }
 
 const loadCategoryManagement = async (req, res) => {
@@ -251,7 +371,7 @@ const postProductToCategory = async (req, res) => {
             );
             let categories = await Category.find()
             // Redirect to the list category page
-            res.render('admin/listCategory', { categories, hideHeader: true, hideFooter:true })
+            res.render('admin/listCategory', { categories, hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
         }
         // Use $addToSet to ensure the productId is only added if it doesn't already exist
 
@@ -266,20 +386,55 @@ const deleteCategory = async (req, res) => {
     await Category.deleteOne({ categoryId })
     let categories = await Category.find()
     // Redirect to the list category page
-    res.render('admin/listCategory', { categories, message: "Category deleted Successfully", hideHeader: true, hideFooter:true })
+    res.render('admin/listCategory', { categories, message: "Category deleted Successfully", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
 }
 
-const listOrders = async(req, res)=>{
-    let orders = await Order.find({}).sort({createdAt:-1})
-    res.render('admin/listOrders', {orders, hideHeader: true, hideFooter:true})
-}
+const listOrders = async (req, res) => {
+    // Default values for pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6;
+
+    // Calculate the number of orders to skip (for pagination)
+    const skip = (page - 1) * limit;
+
+    try {
+        // Get the total count of orders
+        const totalOrders = await Order.countDocuments();
+
+        // Fetch paginated orders
+        const orders = await Order.find({})
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        // Calculate total number of pages
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        // Send the response with pagination details
+        res.render('admin/listOrders', {
+            orders,
+            hideHeader: true,
+            hideFooter: true,
+            currentRoute: req.originalUrl,
+            page,
+            limit,
+            totalPages,
+            previousPage: page > 1 ? page - 1 : null,
+            nextPage: page < totalPages ? page + 1 : null,
+        });
+    } catch (error) {
+        console.error("Error loading orders:", error);
+        res.status(500).send("An error occurred while loading orders.");
+    }
+};
+
 
 const deliveryMark = async(req, res)=>{
     let orderId = req.params.id
 
     await Order.updateOne({orderId}, {$set:{deliveryStatus: "Delivered"}})
     let orders = await Order.find({}).sort({createdAt:-1})
-    res.render('admin/listOrders', {orders, message:"Order Status updated!", hideHeader: true, hideFooter:true})
+    res.render('admin/listOrders', {orders, message:"Order Status updated!", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl})
 }
 
 const notdeliveredMark = async(req, res)=>{
@@ -287,7 +442,7 @@ const notdeliveredMark = async(req, res)=>{
 
     await Order.updateOne({orderId}, {$set:{deliveryStatus: "In Transit"}})
     let orders = await Order.find({}).sort({createdAt:-1})
-    res.render('admin/listOrders', {orders, message:"Order Status updated!", hideHeader: true, hideFooter:true})
+    res.render('admin/listOrders', {orders, message:"Order Status updated!", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl})
 }
 
 const adminCancel = async(req, res)=>{
@@ -307,27 +462,45 @@ const adminCancel = async(req, res)=>{
     await Order.updateOne({orderId}, {$set: {deliveryStatus:"Order Cancelled"}})
 
     let orders = await Order.find({})
-    res.render('admin/listOrders', { orders, message:"Order is cancelled", hideHeader: true, hideFooter:true})
+    res.render('admin/listOrders', { orders, message:"Order is cancelled", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl})
 }
 
 const loadAddCoupon = async(req, res)=>{
     res.render('admin/addCoupon', {hideHeader: true, hideFooter:true})
 }
 
-const postCoupon = async(req, res)=>{
-    let {coupon, discount, availableAfter} = req.body
 
-    
-    const newCoupon = new Coupon({
-        couponName: coupon,
-        discountAmount: discount,
-        availableAfter
-    })
-    
-    await newCoupon.save();
+const postCoupon = async (req, res) => {
+    try {
+        let { coupon, discount, availableAfter, percentage } = req.body;
 
-    res.render('admin/addCoupon', {hideHeader: true, hideFooter:true, message:"Coupon added successfully"})
-}
+        // Create the new coupon object with percentage included
+        const newCoupon = new Coupon({
+            couponName: coupon,
+            discountAmount: discount,
+            availableAfter,
+            discountPercentage: percentage || 0,  // Add percentage if provided, else default to 0
+        });
+
+        // Save the new coupon to the database
+        await newCoupon.save();
+
+        // Return success message
+        res.render('admin/addCoupon', { 
+            hideHeader: true, 
+            hideFooter: true, 
+            message: "Coupon added successfully" 
+        });
+    } catch (error) {
+        console.error(error);
+        res.render('admin/addCoupon', { 
+            hideHeader: true, 
+            hideFooter: true, 
+            message: "An error occurred while adding the coupon. Please try again." 
+        });
+    }
+};
+
 
 const loadReturns = async(req, res)=>{
     let returns = await Order.aggregate([
@@ -344,6 +517,7 @@ const loadReturns = async(req, res)=>{
             "products.returnStatus": 1,
             "products.adminApproved": 1,
             "products._id":1,
+            "products.returnReason": 1,
             createdAt: 1
         }} // Project only required fields
     ]);
@@ -354,22 +528,39 @@ const loadReturns = async(req, res)=>{
 
 const markReturn = async (req, res) => {
     let id = req.query.id;
-    let user = await Order.findOne({"products._id": id})
-    let price = req.query.price
-    let quantity = req.query.quantity
+    let user = await Order.findOne({ "products._id": id });
+    let price = req.query.price;
+    let quantity = req.query.quantity;
 
-    let refund = price * quantity
-      
+    let refund = price * quantity;
+
+    // Update the order status with admin approval
     await Order.updateOne(
         { "products._id": id }, // Match the Order with the specific product _id
         { $set: { "products.$.adminApproved": true } } // Use the positional operator to update the field within the array
     );
 
-    await Wallet.updateOne({userId: user.userId}, {$inc:{amountAvailable: refund}})
-    
-    
+    // Check if the user already has a wallet
+    let wallet = await Wallet.findOne({ userId: user.userId });
+
+    // If wallet doesn't exist, create a new wallet for the user
+    if (!wallet) {
+        wallet = new Wallet({
+            userId: user.userId,
+            amountAvailable: 0, // Set the initial wallet balance to 0
+        });
+        await wallet.save(); // Save the newly created wallet
+    }
+
+    // Update the wallet with the refund amount
+    await Wallet.updateOne(
+        { userId: user.userId },
+        { $inc: { amountAvailable: refund } }
+    );
+
     res.redirect('/admin/adminReturn');
 };
+
 
 const loadEditCategory = async(req, res)=>{
     let catId = req.params.id
@@ -389,7 +580,7 @@ const postDiscount = async(req, res)=>{
 
     await Category.updateOne({categoryId: id}, {$set: {categoryDiscount: discount}})
     let categories = await Category.find({})
-    res.render('admin/listCategory', {categories, message:"Discount added!", hideHeader: true, hideFooter:true })
+    res.render('admin/listCategory', {categories, message:"Discount added!", hideHeader: true, hideFooter:true, currentRoute: req.originalUrl })
 }
 
 const loadSales = async (req, res) => {
@@ -441,7 +632,7 @@ const loadSales = async (req, res) => {
           createdAt: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
-          }, deliveryStatus: "Delivered"
+          }
         });
   
         let totalSales = 0;
@@ -450,14 +641,18 @@ const loadSales = async (req, res) => {
   
         // Calculate totals
         for (const order of orders) {
-          // Calculate total sales from products
-          order.products.forEach((product) => {
-            totalSales += product.price * product.quantity; // Assumes `price` and `quantity` are in product objects
-          });
-  
-          // Calculate total revenue
-          totalRevenue += order.orderAmount;
-        }
+            for (const product of order.products) {
+              const originalProduct = await Product.findOne({
+                name: product.productName,
+                size: product.size
+              });
+              const originalPrice = originalProduct.price || 0;
+              totalSales += originalPrice * (product.quantity || 0);
+            }
+    
+            // Calculate total revenue
+            totalRevenue += order.orderAmount || 0;
+          }
   
         // Calculate total discount
         const totalDiscount = totalSales - totalRevenue;
@@ -488,49 +683,98 @@ const loadSales = async (req, res) => {
 
   const downloadReport = async (req, res) => {
     const { format } = req.params;
+    const { startDate, endDate } = req.query;
 
     try {
+        // Validate dates
+        if (!startDate || !endDate) {
+            return res.status(400).send('Start date and end date are required');
+        }
+
         // Fetch sales data from the database
-        const orders = await Order.find().lean();
+        const orders = await Order.find({
+            createdAt: {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            },
+        });
+
+        const reportsDir = path.join(__dirname, '..', 'public', 'reports');
+        if (!fs.existsSync(reportsDir)) {
+            fs.mkdirSync(reportsDir, { recursive: true });
+        }
 
         if (format === 'pdf') {
-            // Generate PDF
-            const doc = new PDFDocument();
-            const filePath = path.join(__dirname, '..', 'public', 'reports', 'salesReport.pdf');
+            const doc = new PDFDocument({ margin: 30 });
+            const filePath = path.join(reportsDir, 'salesReport.pdf');
+            const stream = fs.createWriteStream(filePath);
+            doc.pipe(stream);
+          
+           // Add Title
+           doc.fontSize(10).text('Sales Report', { align: 'center' });
+  doc.moveDown(1);
 
-            doc.pipe(fs.createWriteStream(filePath));
+  const headerHeight = 18;
 
-            // Add Title
-            doc.fontSize(16).text('Sales Report', { align: 'center' });
-            doc.moveDown();
+  // Add Table Header with background color
+  doc.rect(50, doc.y, 50, headerHeight).fill('#3D464D'); 
+  doc.rect(100, doc.y, 150, headerHeight).fill('#3D464D'); 
+  doc.rect(250, doc.y, 100, headerHeight).fill('#3D464D'); 
+  doc.rect(350, doc.y, 150, headerHeight).fill('#3D464D'); 
+  doc.rect(500, doc.y, 100, headerHeight).fill('#3D464D'); 
 
-            // Add Table Header
-            doc.fontSize(12).text('Sl. No', 50, doc.y, { width: 50, align: 'center' });
-            doc.text('Order ID', 100, doc.y, { width: 150, align: 'left' });
-            doc.text('Date', 250, doc.y, { width: 100, align: 'center' });
-            doc.text('Customer ID', 350, doc.y, { width: 150, align: 'center' });
-            doc.text('Total Amount (₹)', 500, doc.y, { width: 100, align: 'center' });
-            doc.moveDown();
+  doc.fontSize(8).fillColor('white')
+    .text('Sl. No', 55, 60, { width: 50, align: 'center' })
+    .text('Order ID', 105, 60, { width: 150, align: 'center' })
+    .text('Date (dd-mm-yyyy)', 255, 60, { width: 100, align: 'center' })
+    .text('Customer ID', 355, 60, { width: 150, align: 'center' })
+    .text('Total Amount (₹)', 505, 60, { width: 100, align: 'center' });
 
-            // Add Table Rows
-            orders.forEach((order, index) => {
-                doc.fontSize(10).text(`${index + 1}`, 50, doc.y, { width: 50, align: 'center' });
-                doc.text(order._id, 100, doc.y, { width: 150, align: 'left' });
-                doc.text(new Date(order.createdAt).toLocaleDateString('en-GB'), 250, doc.y, { width: 100, align: 'center' });
-                doc.text(order.userId, 350, doc.y, { width: 150, align: 'center' });
-                doc.text(order.orderAmount, 500, doc.y, { width: 100, align: 'center' });
-                doc.moveDown();
-            });
+  doc.moveDown(1);
+  // Draw row border and add data
+  orders.forEach((order, index) => {
+    const yPosition = doc.y + 3;
+    const rowHeight = 18;
 
-            doc.end();
+    // Draw row border
+    doc.rect(50, yPosition, 50, rowHeight).stroke();
+    doc.rect(120, yPosition, 150, rowHeight).stroke();
+    doc.rect(270, yPosition, 100, rowHeight).stroke();
+    doc.rect(380, yPosition, 100, rowHeight).stroke();
+    doc.rect(490, yPosition, 100, rowHeight).stroke();
 
-            await res.download(filePath, 'SalesReport.pdf', (err) => {
+    // Add data to each column
+    doc.fontSize(8).fillColor('black')
+      .text(index + 1, 50, yPosition + 5, { width: 50, align: 'center' })
+      .text(order._id, 120, yPosition + 5, { width: 150, align: 'center' })
+      .text(new Date(order.createdAt).toLocaleDateString('en-GB'), 270, yPosition + 5, { width: 100, align: 'center' })
+      .text(order.userId, 380, yPosition + 5, { width: 100, align: 'center' })
+      .text(order.orderAmount, 490, yPosition + 5, { width: 100, align: 'center' });
+
+    doc.moveDown(1);
+  });
+
+  doc.end();
+           
+          
+            stream.on('finish', () => {
+              res.setHeader('Content-Type', 'application/pdf');
+              res.setHeader('Content-Disposition', 'attachment; filename="SalesReport.pdf"');
+              res.sendFile(filePath, (err) => {
                 if (err) {
-                    console.error('Error in downloading PDF:', err);
+                  console.error('Error downloading PDF:', err);
+                  return res.status(500).send('Error downloading file');
                 }
+          
+                // Clean up file after download
+                fs.unlink(filePath, (err) => {
+                  if (err) console.error('Error cleaning up PDF file:', err);
+                });
+              });
             });
-
-        } else if (format === 'excel') {
+        }
+        
+        else if (format === 'excel') {
             // Generate Excel
             const workbook = new excelJS.Workbook();
             const worksheet = workbook.addWorksheet('Sales Report');
@@ -560,19 +804,24 @@ const loadSales = async (req, res) => {
                 cell.font = { bold: true };
             });
 
-            const filePath = path.join(__dirname, '..', 'public', 'reports', 'salesReport.xlsx');
+            const filePath = path.join(reportsDir, 'salesReport.xlsx');
             await workbook.xlsx.writeFile(filePath);
 
-            await res.download(filePath, 'SalesReport.xlsx', (err) => {
+            // Set headers for download
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename="SalesReport.xlsx"');
+            res.sendFile(filePath, (err) => {
                 if (err) {
-                    console.error('Error in downloading Excel:', err);
+                    console.error('Error downloading Excel:', err);
+                    return res.status(500).send('Error downloading file');
                 }
+
+                // Redirect after download
+                res.render('admin/salesReport');
             });
         } else {
-            res.status(400).send('Invalid format');
+            return res.status(400).send('Invalid format');
         }
-
-        res.redirect('/admin/dashboard')
     } catch (error) {
         console.error('Error generating report:', error);
         res.status(500).send('Internal Server Error');

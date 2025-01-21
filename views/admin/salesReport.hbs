@@ -120,12 +120,12 @@
   <!-- Download Options -->
   <div class="row mt-4">
     <div class="col-md-6">
-      <button class="btn btn-success w-100 rounded-pill" onclick="downloadReport('pdf')">
+      <button class="btn btn-danger w-100 rounded-pill" onclick="downloadReport('pdf')">
         <i class="fas fa-file-pdf"></i> Download as PDF
       </button>
     </div>
     <div class="col-md-6">
-      <button class="btn btn-primary w-100 rounded-pill" onclick="downloadReport('excel')">
+      <button class="btn btn-success w-100 rounded-pill" onclick="downloadReport('excel')">
         <i class="fas fa-file-excel"></i> Download as Excel
       </button>
     </div>
@@ -134,18 +134,53 @@
 </div>
 
 <script>
-  function filterSalesReport() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const filterType = document.getElementById('filterType').value;
+ let globalStartDate = null; // Global variable for startDate
+let globalEndDate = null;   // Global variable for endDate
+let filterType = null
 
-    const url = `/admin/salesReport?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&filter=${encodeURIComponent(filterType)}`;
+// Function to extract query parameters from the URL
+function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
 
+function filterSalesReport() {
+    // Fetch values from input fields
+    globalStartDate = document.getElementById('startDate').value;
+    globalEndDate = document.getElementById('endDate').value;
+    filterType = document.getElementById('filterType').value;
+
+    // Check if dates are selected
+    if ((!globalStartDate || !globalEndDate ) && (!filterType)) {
+        Swal.fire({
+            icon: 'warning',
+            text: 'Please select both start and end dates.',
+        });
+        return;
+    }
+
+    // Construct the URL and navigate
+    const url = `/admin/salesReport?startDate=${encodeURIComponent(globalStartDate)}&endDate=${encodeURIComponent(globalEndDate)}&filter=${encodeURIComponent(filterType)}`;
     window.location.href = url;
-  }
+}
 
-  function downloadReport(format) {
-    const url = `/admin/downloadReport/${format}`;
+function downloadReport(format) {
+    // Check if global dates are available or extract from URL
+    globalStartDate = globalStartDate || getQueryParam('startDate');
+    globalEndDate = globalEndDate || getQueryParam('endDate');
+
+    if (!globalStartDate || !globalEndDate) {
+        Swal.fire({
+            icon: 'warning',
+            text: 'Please filter the sales report first to select a date range.',
+        });
+        return;
+    }
+
+    // Construct the download URL
+    const url = `/admin/downloadReport/${format}?startDate=${encodeURIComponent(globalStartDate)}&endDate=${encodeURIComponent(globalEndDate)}`;
+
+    // Show a SweetAlert and initiate download
     Swal.fire({
         title: 'Downloading...',
         text: `Your ${format.toUpperCase()} report is being prepared.`,
@@ -157,12 +192,14 @@
     });
 }
 
+// Show a message if one exists
+const message = document.getElementById('message')?.value;
+if (message) {
+    Swal.fire({
+        icon: 'info',
+        text: message,
+    });
+}
 
-  const message = document.getElementById('message').value
-    if (message) {
-        Swal.fire({
-            icon: 'info',      // Customize icon as needed
-            text: message
-        });
-    }
+
 </script>

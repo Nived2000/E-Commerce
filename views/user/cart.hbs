@@ -61,15 +61,26 @@
                         <h6>Subtotal</h6>
                         <h6>$150</h6>
                     </div>
+                    {{#if hideDelivery}}
+                    {{else}}
                     <div class="d-flex justify-content-between">
                         <h6 class="font-weight-medium">Shipping</h6>
                         <h6 class="font-weight-medium">10</h6>
                     </div>
+                    {{/if}}
                 </div>
                 <div class="pt-2">
                     <div class="d-flex justify-content-between mt-2">
+                        {{#if hideDelivery}}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5>Total: </h5>
+                            <h5 id="totalAmount"> 0₹</h5>
+                        </div>
+
+                        {{else}}
                         <h5>Total</h5>
                         <h5 id="grandTotal"></h5>
+                        {{/if}}
                     </div>
                     <form id="checkoutForm" action="/user/checkout" method="POST">
                         <input type="hidden" name="updatedQuantities" id="updatedQuantities" value="">

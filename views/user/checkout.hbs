@@ -142,23 +142,38 @@
                         <span class="bg-secondary pr-3">Apply Coupon</span>
                     </h5>
                     <div class="bg-light p-30">
-                        <div class="form-group">
-                            <label for="couponSelect">Select a Coupon</label>
-                            <select class="form-control" id="couponSelect" name="couponId">
-                                <option value="" selected disabled>Select a coupon</option>
-                                {{#each coupons}}
-                                <option value="{{this.couponId}}" data-discount="{{this.discountAmount}}">
-                                    {{this.couponName}}
-                                </option>
-                                {{/each}}
-                            </select>
+                        <div class="form-group d-flex align-items-center">
+                            <label for="couponInput" class="me-2">Enter Coupon Code</label>
+                            <input type="text" class="form-control" id="couponInput" name="couponCode"
+                                placeholder="Enter your coupon code" />
+                            <button type="button" id="removeCouponButton" class="btn btn-danger ms-2">Remove</button>
                         </div>
-                        <div class="d-flex justify-content-between">
+
+                        <div class="mb-3">
+                            <h6>Available Coupons</h6>
+                            <ul id="availableCoupons" class="list-unstyled coupon-list">
+                                {{#each coupons}}
+                                <li data-coupon-id="{{this.couponId}}" data-coupon-name="{{this.couponName}}"
+                                    data-discount="{{this.discountAmount}}"
+                                    data-available-after="{{this.availableAfter}}"
+                                    data-percentage="{{this.discountPercentage}}">
+                                    <div class="coupon-box">
+                                        <strong>{{this.couponName}}</strong>
+                                    </div>
+                                </li>
+                                {{/each}}
+                            </ul>
+                        </div>
+
+
+                        <div class="d-flex justify-content-between align-items-center">
                             <h6 class="font-weight-medium">Discount</h6>
                             <h6 class="font-weight-medium" id="discountAmount">0 ₹</h6>
                         </div>
+                        <button id="applyCouponButton" class="btn btn-primary mt-3">Apply Coupon</button>
                     </div>
                 </div>
+
 
                 <!-- Payment Method -->
                 <div class="mb-5">
@@ -190,11 +205,31 @@
         </div>
     </form>
 </div>
+<style>
+    /* Style for the coupon box */
+    /* Style for the coupon list to display in a row */
+    .coupon-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        /* Add spacing between items */
+    }
 
+    /* Style for the coupon box */
+    .coupon-box {
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #3D464D;
+        color: #ffc800;
+        border-radius: 5px;
+        border: 1px solid #ffc800;
+        font-weight: bold;
+    }
+</style>
 <!-- JavaScript -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const couponSelect = document.getElementById('couponSelect');
+        const couponInput = document.getElementById('couponInput');
         const discountAmountEl = document.getElementById('discountAmount');
         const updatedGrandTotalEl = document.getElementById('updatedGrandTotal');
         const walletUsageInput = document.getElementById('walletUsage');
@@ -203,92 +238,149 @@
         const grandTotalInput = document.querySelector('input[name="grandTotal"]');
         const form = document.querySelector('form[action="/user/place-order"]');
         const useWalletButton = document.getElementById('useWalletButton');
+        const applyCouponButton = document.getElementById('applyCouponButton');
+        const removeCouponButton = document.getElementById('removeCouponButton');
 
+        // Add an event listener to clear the input field
+        removeCouponButton.addEventListener('click', () => {
+            couponInput.value = ''; // Clear the input field
+        });
+
+        // Example Grand Total and Wallet Balance (to be dynamically fetched)
         let originalGrandTotal = parseFloat(grandTotalInput.value);
         let walletBalance = parseFloat(walletBalanceEl.textContent.replace('₹', '').trim());
+        let appliedCouponDiscount = 0;
 
-        // Function to calculate and update totals
+        // Coupon data dynamically rendered from the server
+        const coupons = document.querySelectorAll('#availableCoupons li');
+
+        const couponData = Array.from(coupons).map(coupon => ({
+            couponId: coupon.getAttribute('data-coupon-id'),
+            couponName: coupon.getAttribute('data-coupon-name'),
+            availableAfter: parseInt(coupon.getAttribute('data-available-after'), 10),
+            discountAmount: coupon.getAttribute('data-discount') ? parseInt(coupon.getAttribute('data-discount'), 10) : null,
+            discountPercentage: coupon.getAttribute('data-percentage') ? parseInt(coupon.getAttribute('data-percentage'), 10) : null,
+        }));
+
+        // Apply Coupon Button Logic
+        applyCouponButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            const couponCode = couponInput.value.trim();
+
+            // Get the coupon matching the entered code from couponData
+            const coupon = couponData.find((c) => c.couponName.toUpperCase() === couponCode.toUpperCase());
+
+            if (coupon && originalGrandTotal >= coupon.availableAfter) {
+                let discount = 0;
+
+                // Calculate discount based on the type
+                if (coupon.discountAmount) {
+                    discount = coupon.discountAmount;
+                } else if (coupon.discountPercentage) {
+                    discount = Math.ceil((originalGrandTotal * coupon.discountPercentage) / 100);
+                }
+
+
+                // Update the grand total
+
+                appliedCouponDiscount = discount;
+                updateTotals();
+                console.log(appliedCouponDiscount)
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Coupon Applied',
+                    text: `Coupon "${couponCode}" applied successfully! Discount of ₹${discount.toFixed(2)} applied.`,
+                    confirmButtonText: 'OK',
+                });
+
+            } else if (!coupon) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Coupon',
+                    text: 'The entered coupon code is not valid.',
+                    confirmButtonText: 'Try Again',
+                }).then(() => {
+                    couponInput.value = ''; // Clear the input field
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Coupon Not Applicable',
+                    text: `This coupon requires a minimum total of ₹${coupon.availableAfter}.`,
+                    confirmButtonText: 'OK',
+                });
+            }
+        });
+
+
+
+        // Update Totals
         const updateTotals = () => {
-            const selectedOption = couponSelect.options[couponSelect.selectedIndex];
-            const couponDiscount = parseFloat(selectedOption.getAttribute('data-discount')) || 0;
             const walletDiscount = parseFloat(walletUsageInput.value) || 0;
 
-            // Ensure wallet discount does not exceed the balance
-            if (walletDiscount > grandTotalInput) {
+            // Ensure wallet discount does not exceed cart total or wallet balance
+            if (walletDiscount > originalGrandTotal || walletDiscount > walletBalance) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Invalid Wallet Usage',
-                    text: 'The wallet amount cannot exceed the cart total. You have to pay a minimum of 1 Re!',
+                    text: 'The wallet amount cannot exceed the cart total or your wallet balance.',
                     confirmButtonText: 'OK',
                 }).then(() => {
-                    walletUsageInput.value = walletBalance; // Reset wallet usage to the balance
+                    walletUsageInput.value = Math.min(walletBalance, originalGrandTotal); // Reset to valid value
+                    updateTotals();
                 });
                 return;
             }
 
-
-            let newGrandTotal = originalGrandTotal - couponDiscount - walletDiscount;
+            let newGrandTotal = originalGrandTotal - appliedCouponDiscount - walletDiscount;
 
             // Ensure total doesn't go below 0
             newGrandTotal = Math.max(newGrandTotal, 0);
 
-            // Update the UI
-            discountAmountEl.textContent = `${couponDiscount} ₹`;
+            // Update UI elements
+            discountAmountEl.textContent = `${appliedCouponDiscount} ₹`;
             afterWalletDiscountEl.textContent = `${newGrandTotal} ₹`;
             updatedGrandTotalEl.textContent = `${newGrandTotal} ₹`;
             grandTotalInput.value = newGrandTotal;
         };
 
-        // Event listener for coupon selection
-        couponSelect.addEventListener('change', () => {
-            updateTotals();
-        });
-
-        // Event listener for wallet usage
+        // Wallet Usage Event
         useWalletButton.addEventListener('click', (event) => {
-            event.preventDefault(); // Prevent default button behavior
+            event.preventDefault();
             updateTotals();
         });
 
-        // Form submission logic
+        // Form Submission Logic
         form.addEventListener('submit', (event) => {
-            const selectedCouponId = couponSelect.value;
-            if (selectedCouponId) {
+            const couponCode = couponInput.value.trim();
+            if (couponCode) {
                 const baseAction = form.getAttribute('action');
                 form.setAttribute(
                     'action',
-                    `${baseAction}?couponId=${encodeURIComponent(selectedCouponId)}&walletUsage=${encodeURIComponent(walletUsageInput.value)}`
+                    `${baseAction}?couponCode=${encodeURIComponent(couponCode)}&walletUsage=${encodeURIComponent(walletUsage.value)}`
                 );
             }
         });
     });
 
-    // Add event listener to all address cards
-    // Event listener to handle address card selection
-    // Event listener to handle address card selection
-    document.querySelectorAll('.address-card').forEach(card => {
+    document.querySelectorAll('.address-card').forEach((card) => {
         card.addEventListener('click', function () {
-
             const cardText = this.querySelector('.card-text').innerText;
 
-            // Extract city, state, country, and zip code
-            const lines = cardText.split('\n'); // Split the text by newlines
-            const line1 = lines[0].trim(); // First line is the line1
-            const secondLine = lines[1].split(','); // Second line contains city, state, and country
-            const city = secondLine[0].trim();
-            const state = secondLine[1].trim();
-            const country = secondLine[2].trim();
-            const zipCode = lines[2].split(':')[1].trim(); // ZIP is on the last line
-
+            // Extract address details with fallback for unexpected formats
+            const lines = cardText.split('\n').map((line) => line.trim());
+            const line1 = lines[0] || '';
+            const [city, state, country] = (lines[1]?.split(',') || []).map((item) => item.trim());
+            const zipCode = (lines[2]?.split(':')[1] || '').trim();
 
             // Populate the form inputs with the selected address data
             document.querySelector('input[name="line1"]').value = line1;
-            document.querySelector('input[name="city"]').value = city;
-            document.querySelector('input[name="state"]').value = state;
-            document.querySelector('input[name="country"]').value = country;
-            document.querySelector('input[name="zipCode"]').value = zipCode;
+            document.querySelector('input[name="city"]').value = city || '';
+            document.querySelector('input[name="state"]').value = state || '';
+            document.querySelector('input[name="country"]').value = country || '';
+            document.querySelector('input[name="zipCode"]').value = zipCode || '';
         });
     });
-
 
 </script>

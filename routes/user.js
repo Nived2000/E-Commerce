@@ -4,6 +4,8 @@ const userController = require('../controller/userController');
 const auth = require('../middlewares/auth');
 const passport = require("passport");
 
+
+
 // Route to load the registration page
 router.get('/register', auth.isLogin, userController.loadRegister);
 
@@ -72,7 +74,7 @@ router.post('/verify-payment', userController.verifyPayment);
 
 
 // Filter and sort route
-router.get('/filter', auth.checkSession, userController.sort);
+router.get('/filter', auth.checkSession, userController.sortAndFilter);
 router.get('/returnProduct/:id', auth.checkSession, userController.returnProduct)
 router.get('/search', auth.checkSession, userController.searchItem)
 router.get('/wishlist', auth.checkSession, userController.loadWishlist)

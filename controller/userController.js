@@ -120,7 +120,7 @@ const resendOtp = async (req, res) => {
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error("Error resending OTP: ", error);
-                return res.render('user/verifyOtp', { email, message: 'Error resending OTP. Please try again.' });
+                return res.render('user/verifyOtp', { email, message: 'Error resending OTP. Please try again.', hideHeader: true, hideFooter: true });
             }
             res.render('user/verifyOtp', { email, message: 'OTP resent successfully!', hideHeader: true, hideFooter: true });
         });
@@ -192,7 +192,7 @@ const loadRegister = (req, res) => {
 // Load OTP verification page
 const loadOtpPage = (req, res) => {
     const { email } = req.query
-    res.render('user/verifyOtp', { email })
+    res.render('user/verifyOtp', { email, hideHeader: true, hideFooter: true })
 }
 
 const loadLogin = async (req, res) => {
@@ -481,23 +481,52 @@ const resetPassword = async (req, res) => {
 }
 
 const loadProducts = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1; // Current page number
+        const limit = parseInt(req.query.limit) || 4; // Products per page
+        const skip = (page - 1) * limit; // Number of products to skip
 
-    let products = await Product.find({ isListed: true });
-    const user = await User.findOne({ email: req.session.email });
-    if (user.isBlocked) {
-        req.session.destroy(); // Destroy session if user is blocked
-        return res.redirect('/user/login');
+        // Fetch paginated products
+        const products = await Product.find({ isListed: true })
+            .skip(skip)
+            .limit(limit);
+
+        // Count the total number of listed products
+        const totalProducts = await Product.countDocuments({ isListed: true });
+
+        // Fetch the user information
+        const user = await User.findOne({ email: req.session.email });
+
+        // Check if the user is blocked
+        if (user.isBlocked) {
+            req.session.destroy(); // Destroy session if user is blocked
+            return res.redirect('/user/login');
+        }
+
+        // Render the products page with pagination data
+        res.render('user/listProducts', {
+            products,
+            user,
+            currentPage: page,
+            totalPages: Math.ceil(totalProducts / limit),
+        });
+    } catch (error) {
+        console.error('Error loading products:', error);
+        res.status(500).send('Internal Server Error');
     }
+};
 
-    res.render('user/listProducts', { products, user })
-}
 
 const loadProfile = async (req, res) => {
     let userEmail = req.session.email
     let user = await User.findOne({ email: userEmail })
 
     let wallet = await Wallet.findOne({ userId: user.userId })
-    let walletAmount = wallet.amountAvailable
+    if (wallet) {
+        var walletAmount = wallet.amountAvailable
+    } else {
+        var walletAmount = 0
+    }
     res.render('user/profile', { user, walletAmount })
 }
 
@@ -532,7 +561,9 @@ const postAddress = async (req, res) => {
     user.address.push(newAddress)
     await user.save()
     let wallet = await Wallet.findOne({ userId: user.userId })
-    let walletAmount = wallet.amountAvailable
+    if (wallet) {
+        var walletAmount = wallet.amountAvailable
+    }
     res.render('user/profile', { message: "Address added successfully ", user, walletAmount })
 }
 
@@ -587,7 +618,6 @@ const postEditedAddress = async (req, res) => {
 }
 
 const loadCart = async (req, res) => {
-
     try {
         // Fetch user based on session email
         const user = await User.findOne({ email: req.session.email }).lean();
@@ -602,24 +632,42 @@ const loadCart = async (req, res) => {
                 user,
                 products: [],
                 message: "Your cart is empty!",
+                hideDelivery: true
             });
         }
 
         // Fetch stock for each product in the cart
         const productsWithStock = await Promise.all(
             cart.products.map(async (cartProduct) => {
-
                 const product = await Product.findOne({ name: cartProduct.productName, size: cartProduct.size }).lean();
+
+                if (product && product.isListed === false) {
+                    // If product is found and isListed is false, return null to remove from cart
+                    return null;
+                }
+
                 return {
                     ...cartProduct, // Cart-specific details (e.g., quantity)
                     availableStock: product ? product.stock : 0, // Available stock from Product
                 };
             })
         );
-        console.log(productsWithStock);
+
+        // Remove null values (products that were not listed) from the cart
+        const filteredProducts = productsWithStock.filter(product => product !== null);
+
+        // If no products remain in the cart after filtering, show the empty cart message
+        if (filteredProducts.length === 0) {
+            return res.render('user/cart', {
+                user,
+                products: [],
+                message: "Your cart is empty!",
+            });
+        }
 
         // Render the cart page with user and product data
-        res.render('user/cart', { user, products: productsWithStock });
+        res.render('user/cart', { user, products: filteredProducts });
+
     } catch (error) {
         console.error("Error loading cart page:", error);
         res.status(500).send("Internal Server Error");
@@ -628,32 +676,40 @@ const loadCart = async (req, res) => {
 
 
 
-const addToCart = async (req, res) => {
-    let { productName, productSize, productQuantity, wishlist } = req.query;
 
-    console.log(productName, productSize, productQuantity, wishlist);
+const addToCart = async (req, res) => {
+    let { productName, productSize, productQuantity, wishlist, page = 1, limit = 4 } = req.query;
+
+    console.log(productName, productSize, productQuantity, wishlist, page, limit);
 
     try {
-        if (req.query.wishlist) {
+        // Parse page and limit as integers
+        page = parseInt(page, 10);
+        limit = parseInt(limit, 10);
+
+        // Handle removing from wishlist if applicable
+        if (wishlist) {
             await Wishlist.updateOne(
                 { "products.productName": productName, "products.size": productSize },
                 { $pull: { products: { productName: productName, size: productSize } } }
             );
         }
 
+        // Find the user
         let user = await User.findOne({ email: req.session.email });
         if (!user) {
             return res.status(400).send("User not found.");
         }
         let userId = user.userId.toString();
 
+        // Find or create the user's cart
         let cart = await Cart.findOne({ userId });
-
         if (!cart) {
             let newCart = new Cart({ userId });
             await newCart.save();
         }
 
+        // Check if the product already exists in the cart
         let productExist = await Cart.findOne({
             userId,
             "products.productName": productName,
@@ -661,30 +717,43 @@ const addToCart = async (req, res) => {
         });
 
         if (productExist) {
-            let products = await Product.find({ isListed: true });
+            let totalProducts = await Product.countDocuments({ isListed: true });
+            let products = await Product.find({ isListed: true })
+                .skip((page - 1) * limit)
+                .limit(limit);
+
             return res.render("user/listProducts", {
                 products,
+                totalPages: Math.ceil(totalProducts / limit),
+                currentPage: page,
                 message: "Added to Cart already, Browse other products :)",
                 user
             });
         }
 
+        // Find the product details
         let product = await Product.findOne({ name: productName });
-        console.log(product);
-        
         if (!product) {
-            let products = await Product.find({ isListed: true });
+            let totalProducts = await Product.countDocuments({ isListed: true });
+            let products = await Product.find({ isListed: true })
+                .skip((page - 1) * limit)
+                .limit(limit);
+
             return res.render("user/listProducts", {
                 products,
+                totalPages: Math.ceil(totalProducts / limit),
+                currentPage: page,
                 message: "Product not found. Please check and try again.",
                 user
             });
         }
 
+        // Calculate the discounted price
         let discount = product.discount || 0;
         let discountedPrice = product.price - (discount / 100) * product.price;
         discountedPrice = Math.floor(discountedPrice);
 
+        // Add the product to the cart
         await Cart.updateOne(
             { userId },
             {
@@ -700,9 +769,16 @@ const addToCart = async (req, res) => {
             }
         );
 
-        let products = await Product.find({ isListed: true });
+        // Paginate the product listing
+        let totalProducts = await Product.countDocuments({ isListed: true });
+        let products = await Product.find({ isListed: true })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
         return res.render("user/listProducts", {
             products,
+            totalPages: Math.ceil(totalProducts / limit),
+            currentPage: page,
             message: "Added to Cart, Browse for more",
             user
         });
@@ -711,6 +787,7 @@ const addToCart = async (req, res) => {
         return res.status(500).send("An error occurred while adding the product to the cart.");
     }
 };
+
 
 
 const deleteProduct = async (req, res) => {
@@ -740,11 +817,10 @@ const loadCheckout = async (req, res) => {
         const address = user.address || null; // Get the address or set to null if none
         const updatedQuantities = JSON.parse(req.body.updatedQuantities);
 
-
-
         const cart = await Cart.findOne({ userId: user.userId }).lean();
 
-        await updatedQuantities.forEach(async (product) => {
+        // Update the quantities in the cart
+        await Promise.all(updatedQuantities.map(async (product) => {
             const { id, quantity } = product; // Destructure `id` and `quantity`
 
             // Find and update the product's quantity in the cart
@@ -752,8 +828,9 @@ const loadCheckout = async (req, res) => {
                 { "products._id": id }, // Match the product's `_id`
                 { $set: { "products.$.quantity": quantity } } // Update the quantity using the `$` operator
             );
-        });
+        }));
 
+        // If cart is empty or products are removed (due to isListed === false), filter the cart
         if (!cart || !cart.products || cart.products.length === 0) {
             return res.render('user/checkout', {
                 address,
@@ -764,20 +841,78 @@ const loadCheckout = async (req, res) => {
                 message: "Your cart is empty!",
             });
         }
-        const wallet = await Wallet.findOne({ userId: user.userId })
-        // Calculate totals
-        const products = cart.products;
-        const total = products.reduce((sum, product) => sum + product.price * product.quantity, 0);
-        const grandTotal = total + 100; // Adding fixed shipping or additional cost
-        let coupons = await Coupon.find({ availableAfter: { $lte: total } })
 
-        // Render the checkout page
+        // Filter out products that are no longer listed (isListed: false)
+        const productsWithStock = await Promise.all(
+            cart.products.map(async (cartProduct) => {
+                const product = await Product.findOne({ name: cartProduct.productName, size: cartProduct.size }).lean();
+
+                // If the product is found and is not listed, return null to remove it from the cart
+                if (product && product.isListed === false) {
+                    return null;
+                }
+
+                return cartProduct; // Keep the product if it's listed
+            })
+        );
+
+        // Remove any null values from the products array (products that are no longer listed)
+        const filteredProducts = productsWithStock.filter(product => product !== null);
+
+        // If all products were removed (not listed), return an empty cart message
+        if (filteredProducts.length === 0) {
+            return res.render('user/checkout', {
+                address,
+                user,
+                products: [],
+                total: 0,
+                grandTotal: 0,
+                message: "Your cart is empty!",
+            });
+        }
+
+        // Fetch wallet details
+        const wallet = await Wallet.findOne({ userId: user.userId });
+
+        // Calculate totals for the remaining products
+        const total = filteredProducts.reduce((sum, product) => sum + product.price * product.quantity, 0);
+        let grandTotal = total + 100; // Adding fixed shipping or additional cost
+
+        // Fetch applicable coupons based on total price
+        let tenDaysAgo = new Date();
+        tenDaysAgo.setDate(tenDaysAgo.getDate() - 15); // Subtract 10 days from today
+
+        let coupons = await Coupon.find({
+            availableAfter: { $lte: total },
+            createdAt: { $gte: tenDaysAgo } // Ensure coupons were created within the last 10 days
+        });
+
+        // Check if the user has applied a coupon
+        let appliedCoupon = null;
+        if (req.body.coupon) {
+            appliedCoupon = coupons.find(coupon => coupon.couponName === req.body.coupon);
+        }
+
+        // If a coupon is applied, apply its discount
+        if (appliedCoupon) {
+            if (appliedCoupon.discountAmount) {
+                // If the coupon is a fixed discount (in Rs)
+                grandTotal -= appliedCoupon.discountAmount;
+            }
+
+            if (appliedCoupon.percentage) {
+                // If the coupon is a percentage discount
+                grandTotal -= (total * (appliedCoupon.percentage / 100));
+            }
+        }
+
+        // Render the checkout page with updated details
         res.render('user/checkout', {
             address,
             user,
-            products,
+            products: filteredProducts,
             total,
-            grandTotal,
+            grandTotal: grandTotal < 0 ? 0 : grandTotal, // Ensure grand total is not negative
             coupons,
             wallet
         });
@@ -786,6 +921,8 @@ const loadCheckout = async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 };
+
+
 
 
 const placeOrder = async (req, res) => {
@@ -808,14 +945,35 @@ const placeOrder = async (req, res) => {
             return res.status(400).send("Cart is empty.");
         }
 
-        // Get coupon details if a coupon ID is provided
-        const couponId = req.query.couponId;
-        let walletAmount = req.query.walletUsage || 0
+        // Filter out unlisted products (isListed: false)
+        const productsWithStock = await Promise.all(
+            cart.products.map(async (cartProduct) => {
+                const product = await Product.findOne({ name: cartProduct.productName, size: cartProduct.size }).lean();
 
+                // If the product is not listed, return null to remove it from the cart
+                if (product && product.isListed === false) {
+                    return null;
+                }
+
+                return cartProduct; // Keep the product if it's listed
+            })
+        );
+
+        // Remove any null values from the products array (products that are no longer listed)
+        const filteredProducts = productsWithStock.filter(product => product !== null);
+
+        // If all products were removed (not listed), return an empty cart message
+        if (filteredProducts.length === 0) {
+            return res.redirect('/user/cart');
+        }
+
+        // Get coupon details if a coupon ID is provided
+        const couponName = req.query.couponCode;
+        let walletAmount = req.query.walletUsage || 0;
 
         let couponDiscount = 0;
-        if (couponId) {
-            const coupon = await Coupon.findOne({ couponId });
+        if (couponName) {
+            const coupon = await Coupon.findOne({ couponName });
             if (coupon) {
                 couponDiscount = coupon.discountAmount || 0;
             } else {
@@ -825,9 +983,9 @@ const placeOrder = async (req, res) => {
 
         // Calculate order amount
         const orderAmount =
-            cart.products.reduce((total, product) => total + product.price * product.quantity, 100) - couponDiscount - walletAmount;
+            filteredProducts.reduce((total, product) => total + product.price * product.quantity, 100) - couponDiscount - walletAmount;
 
-        await Wallet.updateOne({ userId: user.userId }, { $inc: { amountAvailable: -walletAmount } })
+        await Wallet.updateOne({ userId: user.userId }, { $inc: { amountAvailable: -walletAmount } });
 
         // Handle "Cash On Delivery"
         if (paymentMethod === "Cash on Delivery") {
@@ -838,7 +996,7 @@ const placeOrder = async (req, res) => {
                     line1, state, city,
                     country, zipCode,
                 },
-                products: cart.products,
+                products: filteredProducts,
                 paymentMethod,
                 orderAmount,
                 paymentStatus: "Pending",
@@ -849,12 +1007,12 @@ const placeOrder = async (req, res) => {
             await order.save();
 
             // Update product stock
-            for (const product of cart.products) {
+            for (const product of filteredProducts) {
                 const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
                 if (currentProduct) {
                     const newStock = currentProduct.stock - product.quantity;
                     if (newStock < 0) {
-                        return res.status(400).send(`Insufficient stock for ${product.productName}`);
+                        return res.render('user/home', {message:`Insufficient stock for an item`})
                     }
                     await Product.updateOne(
                         { name: product.productName, size: product.size },
@@ -893,7 +1051,7 @@ const placeOrder = async (req, res) => {
                 line1, state, city,
                 country, zipCode,
             },
-            products: cart.products,
+            products: filteredProducts,
             paymentMethod,
             orderAmount: amountInPaise,
             razorpayOrderId: razorpayOrder.id,
@@ -916,40 +1074,61 @@ const placeOrder = async (req, res) => {
 
 
 
-const sort = async (req, res) => {
-    let { sort } = req.query
-    let user = await User.findOne({ email: req.session.email })
 
-    if (sort === 'price_asc') {
-        let products = await Product.find({}).sort({ price: 1 });
-        res.render('user/listProducts', { products, user })
+const sortAndFilter = async (req, res) => {
+    try {
+        let { sort, category, page, limit } = req.query;
 
-    } else if (sort === 'price_desc') {
-        let products = await Product.find({}).sort({ price: -1 });
-        res.render('user/listProducts', { products, user })
+        // Default values for pagination
+        page = parseInt(page) || 1; // Current page number
+        limit = parseInt(limit) || 4; // Products per page
+        const skip = (page - 1) * limit; // Number of products to skip
 
-    } else if (sort === 'newest') {
-        let products = await Product.find({}).sort({ createdAt: -1 });
-        res.render('user/listProducts', { products, user })
+        // Sorting logic
+        let sortStage = {};
+        if (sort === 'price_asc') {
+            sortStage.price = 1;
+        } else if (sort === 'price_desc') {
+            sortStage.price = -1;
+        } else if (sort === 'newest') {
+            sortStage.createdAt = -1;
+        } else if (sort === 'popularity') {
+            sortStage.orderCount = -1;
+        }
 
-    } else if (sort === 'popularity') {
-        let products = await Product.find({}).sort({ orderCount: -1 });
-        res.render('user/listProducts', { products, user })
+        // Filtering logic
+        const filterStage = {};
+        if (category) {
+            filterStage.category = { $in: category };
+        }
 
-    } else if (sort === 'stock') {
-        let products = await Product.find({ stock: { $gt: 0 } })
-        res.render('user/listProducts', { products, user })
+        // Fetch the filtered and sorted products with pagination
+        const products = await Product.find(filterStage)
+            .sort(sortStage)
+            .skip(skip)
+            .limit(limit);
 
+        // Count the total number of products matching the filter
+        const totalProducts = await Product.countDocuments(filterStage);
+
+        // Render the products page with pagination and sort/filter data
+        res.render('user/listProducts', {
+            products,
+            currentPage: page,
+            totalPages: Math.ceil(totalProducts / limit),
+        });
+    } catch (error) {
+        console.error('Error in sort and filter:', error);
+        res.status(500).send('Internal Server Error');
     }
-
-}
+};
 
 const cancelOrder = async (req, res) => {
     try {
         let _id = req.params.id;
         const user = await User.findOne({ email: req.session.email });
         let currOrders = await Order.findOne({ _id });
-        
+
         let refundAmount;
         let walletAmount = currOrders.walletAmount;
 
@@ -991,7 +1170,7 @@ const cancelOrder = async (req, res) => {
             { $set: { deliveryStatus: "Order cancelled" } }
         );
 
-        let orders = await Order.find({}).sort({ createdAt: -1 });
+        let orders = await Order.find({ userId: user.userId }).sort({ createdAt: -1 });
         res.render('user/orders', { orders, message: "Order is cancelled" });
     } catch (error) {
         console.error("Error cancelling order:", error);
@@ -1001,21 +1180,75 @@ const cancelOrder = async (req, res) => {
 
 
 const loadOrders = async (req, res) => {
-    let user = await User.findOne({ email: req.session.email })
-    let orders = await Order.find({ userId: user.userId }).sort({ createdAt: -1 })
+    try {
+        let user = await User.findOne({ email: req.session.email });
+        if (!user) {
+            return res.status(404).send("User not found.");
+        }
 
-    res.render('user/orders', { orders })
+        // Get page and limit from the query parameters, or set default values
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 5;
+        const skip = (page - 1) * limit;
+
+        // Get the total number of orders
+        const totalOrders = await Order.countDocuments({ userId: user.userId });
+
+        // Get the orders for the current page
+        let orders = await Order.find({ userId: user.userId })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        // Check if orders are empty
+        let message = orders.length === 0 ? "No orders found. Start shopping to place your first order!" : null;
+
+        // Calculate total pages
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        // Calculate previous and next page numbers
+        const previousPage = page > 1 ? page - 1 : null;
+        const nextPage = page < totalPages ? page + 1 : null;
+
+        // Pass data to the view
+        res.render('user/orders', {
+            orders,
+            message,
+            page,
+            limit,
+            totalPages,
+            previousPage,
+            nextPage
+        });
+    } catch (error) {
+        console.error("Error loading orders:", error);
+        res.status(500).send("An error occurred while loading orders.");
+    }
+};
 
 
-}
 
 const orderDetails = async (req, res) => {
-    let orderId = req.params.id
-    let order = await Order.findOne({ orderId })
-    let products = order.products
-    let deliveryStatus = order.deliveryStatus
-    res.render('user/orderDetails', { products, deliveryStatus })
-}
+    let orderId = req.params.id;
+    let order = await Order.findOne({ orderId });
+
+    if (!order) {
+        return res.status(404).send("Order not found");
+    }
+
+    let products = order.products;
+    let deliveryStatus = order.deliveryStatus;
+
+    // Calculate days difference correctly
+    let daysAfterOrdered = (new Date() - new Date(order.createdAt)) / (1000 * 60 * 60 * 24); // Convert milliseconds to days
+
+    // Check if return is possible (if order was placed within 5 days)
+    let returnPossible = daysAfterOrdered <= 5;
+
+    // Render the order details page with the return possible flag
+    res.render('user/orderDetails', { products, deliveryStatus, returnPossible });
+};
+
 
 const verifyPayment = async (req, res) => {
     try {
@@ -1075,10 +1308,11 @@ const verifyPayment = async (req, res) => {
 
 const returnProduct = async (req, res) => {
     let id = req.params.id
+    let returnReason = req.query.reason
 
     await Order.updateOne(
         { "products._id": id }, // Match the Order with the specific product _id
-        { $set: { "products.$.returnStatus": true } } // Use the positional operator to update the field within the array
+        { $set: { "products.$.returnStatus": true, "products.$.returnReason": returnReason } } // Use the positional operator to update the field within the array
     );
 
     res.redirect('/user/orders')
@@ -1106,7 +1340,7 @@ const addToWishlist = async (req, res) => {
         let user = await User.findOne({ email: req.session.email });
         let product = await Product.findOne({ name: productName, size: productSize });
         let discount = product.discount
-        let discountedPrice = Math.floor(product.price - (discount/100) * product.price)
+        let discountedPrice = Math.floor(product.price - (discount / 100) * product.price)
         if (!product) {
             return res.status(404).send("Product not found");
         }
@@ -1150,14 +1384,60 @@ const addToWishlist = async (req, res) => {
     }
 };
 
-const loadWishlist = async(req, res)=>{
-    let user = await User.findOne({email: req.session.email})
-    let wishlist = await Wishlist.findOne({userId: user.userId})
-    let wishlistProducts = wishlist.products
-    res.render('user/wishlist', {wishlistProducts})
-}
+const loadWishlist = async (req, res) => {
+    try {
+        // Fetch the user based on session email
+        const page = parseInt(req.query.page) || 1; // Current page number
+        const limit = parseInt(req.query.limit) || 4; // Products per page
+        const skip = (page - 1) * limit; // Number of products to skip
 
-const wishlistRemove = async(req, res)=>{
+        // Fetch paginated products
+        const products = await Product.find({ isListed: true })
+            .skip(skip)
+            .limit(limit);
+        const user = await User.findOne({ email: req.session.email });
+        const totalProducts = await Product.countDocuments({ isListed: true });
+        if (!user) {
+            return res.status(404).send("User not found.");
+        }
+
+        // Fetch the wishlist for the user
+        const wishlist = await Wishlist.findOne({ userId: user.userId });
+
+        // If wishlist does not exist, redirect to listProducts page with message
+        if (!wishlist) {
+            return res.render('user/listProducts', {
+                products,
+                user,
+                currentPage: page,
+                totalPages: Math.ceil(totalProducts / limit),
+                message: "Add something to wishlist first"
+            });
+        }
+
+        // Check if wishlist is empty
+        const wishlistProducts = wishlist.products;
+
+        if (wishlistProducts.length === 0) {
+            // Use SweetAlert to notify the user that the wishlist is empty
+            return res.render('user/wishlist', {
+                wishlistProducts,
+                message: "Your wishlist is empty!",
+                swal: true,  // Signal to show SweetAlert
+            });
+        }
+
+        // Render the wishlist page with products
+        res.render('user/wishlist', { wishlistProducts });
+
+    } catch (error) {
+        console.error("Error loading wishlist:", error);
+        res.status(500).send("Internal Server Error");
+    }
+};
+
+
+const wishlistRemove = async (req, res) => {
     let productId = req.params.id
     let user = await User.findOne({ email: req.session.email })
     const updatedlist = await Wishlist.findOneAndUpdate(
@@ -1175,6 +1455,6 @@ module.exports = {
     registerUser, loadRegister, verifyOtp, loadOtpPage, loadLogin, loginUser, loadHome, loadforgotPassword, sendResetMail,
     logoutUser, loadProductDetails, googleAuth, googleCallback, loadCategory, resendOtp, loadResetPassword, resetPassword, loadProducts,
     loadProfile, loadEditProfile, postAddress, postProfile, loadEditAddress, postEditedAddress, loadCart, addToCart, deleteProduct,
-    loadCheckout, placeOrder, sort, cancelOrder, loadOrders, orderDetails, verifyPayment, returnProduct, searchItem, addToWishlist,
+    loadCheckout, placeOrder, sortAndFilter, cancelOrder, loadOrders, orderDetails, verifyPayment, returnProduct, searchItem, addToWishlist,
     loadWishlist, wishlistRemove
 }

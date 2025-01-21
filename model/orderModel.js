@@ -23,7 +23,8 @@ const orderSchema = new mongoose.Schema({
             quantity: { type: Number, required: true, min: 1 }, // Quantity of each product
             size: { type: String, required: true }, // Store the price at the time of adding to cart
             returnStatus: { type: Boolean, default: false },
-            adminApproved: { type: Boolean, default: false}
+            adminApproved: { type: Boolean, default: false},
+            returnReason: {type: String, default:""}
             
         }
     ],

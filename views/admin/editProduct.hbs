@@ -66,9 +66,17 @@
         <input type="number" id="stock" name="stock" class="form-control" value="{{product.stock}}" placeholder="Enter stock" required>
       </div>
       <div class="form-group mb-4">
-        <label for="coupon" class="text-white">Coupon Applicable:</label>
-        <input type="text" id="coupon" name="coupon" class="form-control" value="{{product.coupon}}" placeholder="Enter coupon applicable">
-      </div>
+  <label for="category" class="text-white">Category:</label>
+  <select id="category" name="category" class="form-control"  required>
+    <option value="" disabled selected>Select a category</option>
+    <option value="MEN'S WEAR">MEN'S WEAR</option>
+    <option value="WOMEN'S WEAR">WOMEN'S WEAR</option>
+    <option value="KID'S WEAR">KIDS' WEAR</option>
+    <option value="ACCESSORIES">ACCESSORIES</option>
+    
+    
+  </select>
+</div>
       <label for="images" class="text-white">Existing Images:</label>
       {{#each product.images}}
       <img class="existing-images" src="/img/{{this}}" alt="">

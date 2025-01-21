@@ -1,50 +1,52 @@
 <link rel="stylesheet" href="/styles/orderDetails.css">
-<div id="particles-js" class="snow"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="container-fluid d-flex justify-content-center" style="min-height: 100vh; background: #f7f9fc;">
-    <div class="row px-xl-5 w-100">
-        <div class="col-12 table-responsive mb-5">
-            <table class="table table-light table-borderless table-hover text-center mb-0 shadow-lg rounded">
-                <thead class="thead-dark" style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
-                    <tr>
-                        <th scope="col" class="text-center">SI.No</th>
-                        <th scope="col" class="text-center">Products</th>
-                        <th scope="col" class="text-center">Price</th>
-                        <th scope="col" class="text-center">Quantity</th>
-                        <th scope="col" class="text-center">Total</th>
+<div class="card w-100 shadow-lg rounded container">
+    <div class="card-header bg-primary text-white text-center">
+        <h5 class="mb-0">Order Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover table-striped text-center">
+                <thead class="thead-light">
+                    <tr style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
+                        <th scope="col">SI.No</th>
+                        <th scope="col">Products</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Total</th>
                         {{#ifEquals deliveryStatus "Delivered"}}
-                        <th scope="col" class="text-center">Action</th>
+                        <th scope="col">Action</th>
                         {{/ifEquals}}
                     </tr>
                 </thead>
-                <tbody class="align-middle">
+                <tbody>
                     {{#each products}}
                     <tr>
-                        <td class="text-center">{{increment @index}}</td>
-                        <td class="align-middle text-center">
-                            <div class="d-flex align-items-center justify-content-center">
-                                <span><b>{{this.productName}}</b></span>
-                            </div>
+                        <td>{{increment @index}}</td>
+                        <td>
+                            <b>{{this.productName}}</b>
                         </td>
-                        <td class="text-center align-middle">{{this.price}} ₹</td>
-                        <td class="text-center align-middle">
-                            <div class="input-group">
-                                <span class="mx-2 quantity-text">{{this.quantity}}</span>
-                            </div>
-                        </td>
-                        <td class="text-center align-middle">{{multiply this.price this.quantity}} ₹</td>
+                        <td>{{this.price}} ₹</td>
+                        <td>{{this.quantity}}</td>
+                        <td>{{multiply this.price this.quantity}} ₹</td>
                         {{#ifEquals ../deliveryStatus "Delivered"}}
-                        <td class="text-center">
+                        <td>
                             {{#if this.returnStatus}}
-                                {{#if this.adminApproved}}
-                                <span class="text-success">Product has been Returned</span>
-                                {{else}}
-                                <span class="text-warning">Return confirmation Pending</span>
-                                {{/if}}
+                            {{#if this.adminApproved}}
+                            <span class="badge badge-success">Product Returned</span>
                             {{else}}
-                            <a href="/user/returnProduct/{{this.id}}" class="btn btn-primary shadow-sm rounded">Return Product</a>
+                            <span class="badge badge-warning">Return Pending</span>
                             {{/if}}
+                            {{else}}
+                            {{#if ../returnPossible}}
+                            <a href="javascript:void(0)" style="color: black; background-color:#ffc800" class="btn btn-sm rounded shadow-sm return-product" data-product-id="{{this.id}}">
+                                Return Product
+                            </a>
+                            {{else}}
+                            <p>Return Not Possible</p>
+                            {{/if}}
+                             {{/if}}
                         </td>
                         {{/ifEquals}}
                     </tr>
@@ -52,5 +54,44 @@
                 </tbody>
             </table>
         </div>
+
+        <input type="hidden" value="{{message}}" id="message">
     </div>
 </div>
+
+<script>
+    const message = document.getElementById('message').value;
+    if (message) {
+        Swal.fire({
+            icon: 'info',
+            text: message
+        });
+    }
+
+    // Handle the return product click event
+    $(document).on('click', '.return-product', function() {
+        const productId = $(this).data('product-id');
+
+        // Open SweetAlert modal to ask for return reason
+        Swal.fire({
+            title: 'Reason for Return',
+            input: 'textarea',
+            inputPlaceholder: 'Enter reason for return...',
+            showCancelButton: true,
+            confirmButtonText: 'Submit',
+            cancelButtonText: 'Cancel',
+            preConfirm: (reason) => {
+                if (reason) {
+                    // Redirect to the return product route with the reason as a query parameter
+                    window.location.href = `/user/returnProduct/${productId}?reason=${encodeURIComponent(reason)}`;
+                } else {
+                    Swal.showValidationMessage('Please enter a return reason');
+                }
+            }
+        });
+    });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>

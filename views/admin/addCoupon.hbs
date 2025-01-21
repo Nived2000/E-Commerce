@@ -1,19 +1,20 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/styles/addProduct.css">
 
-    <!-- Navbar -->
-    <div id="particles-js" class="snow"></div>
+<!-- Navbar -->
+<div id="particles-js" class="snow"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="background-color: #3D464D;">
   <div class="container-fluid">
     <div class="col-lg-4">
-                <a href="" class="text-decoration-none">
-                    <span style="color:#3D464D; background-color:#ffc800" class="h1 text-uppercase px-2">M</span>
-                    <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
-                </a>
-            </div>
+      <a href="" class="text-decoration-none">
+        <span style="color:#3D464D; background-color:#ffc800" class="h1 text-uppercase px-2">M</span>
+        <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
+      </a>
+    </div>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
@@ -39,35 +40,38 @@
 </nav>
 
 <!-- Add Product Form -->
-  <div class="container my-5">
+<div class="container my-5">
   <h2 class="text-center add-product">ADD NEW COUPON</h2>
-  <form action="/admin/addCoupon" method="POST" class="product-form" >
+  <form action="/admin/addCoupon" method="POST" class="product-form" onsubmit="return validateForm()">
     <div class="form-group mb-4">
-      <label for="name" class="text-white">Coupon Name:</label>
-      <input type="text" id="name" name="coupon" class="form-control" placeholder="Enter coupon name" required>
+      <label for="couponName" class="text-white">Coupon Name:</label>
+      <input type="text" id="couponName" name="coupon" class="form-control" placeholder="Enter coupon name" required>
     </div>
     <div class="form-group mb-4">
-      <label for="name" class="text-white">Coupon Discount:</label>
-      <input type="number" id="name" name="discount" class="form-control" placeholder="Enter coupon discount" required>
+      <label for="couponDiscount" class="text-white">Coupon Discount (Rs):</label>
+      <input type="number" id="couponDiscount" name="discount" class="form-control" placeholder="Enter coupon discount">
     </div>
     <div class="form-group mb-4">
-      <label for="name" class="text-white">Available Above:</label>
-      <input type="number" id="name" name="availableAfter" class="form-control" placeholder="Enter price range above" required>
+      <label for="couponPercentage" class="text-white">Coupon Discount (%):</label>
+      <input type="number" id="couponPercentage" name="percentage" class="form-control"
+        placeholder="Enter coupon discount">
+    </div>
+    <div class="form-group mb-4">
+      <label for="availableAfter" class="text-white">Available Above:</label>
+      <input type="number" id="availableAfter" name="availableAfter" class="form-control"
+        placeholder="Enter price range above" required>
     </div>
 
     <!-- New Input for Image -->
-    
-
     <!-- Image Preview -->
-
 
     <div class="d-grid gap-2">
       <button type="submit" class="btn btn-warning">Add Coupon</button>
     </div>
   </form>
 </div>
-  <input id="message" value="{{message}}" type="hidden">
-</div>
+
+<input id="message" value="{{message}}" type="hidden">
 <script>
   const message = document.getElementById('message').value;
 
@@ -79,5 +83,53 @@
       text: message,
     });
   }
+  function validateForm() {
+    const couponDiscount = document.getElementById("couponDiscount").value;
+    const availableAfter = document.getElementById("availableAfter").value;
+    const couponPercentage = document.getElementById("couponPercentage").value;
+
+    // Validate if coupon discount is at least 1000 less than available after price
+    if (parseInt(couponDiscount) >= parseInt(availableAfter) - 1000) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Coupon discount should be at least 1000 rupees less than the available after price.',
+      });
+      return false;
+    }
+
+    // Validate if the percentage discount is greater than 15
+    if (parseInt(couponPercentage) > 15) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Coupon percentage cannot be greater than 15%.',
+      });
+      return false;
+    }
+
+    // Ensure that only one of couponDiscount or couponPercentage is filled
+    if (couponDiscount && couponPercentage) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'You can only fill either coupon discount (Rs) or coupon percentage, not both.',
+      });
+      return false;
+    }
+
+    // Ensure that at least one of couponDiscount or couponPercentage is filled
+    if (!couponDiscount && !couponPercentage) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: 'Please fill in either the discount or percentage field.',
+      });
+      return false;
+    }
+
+    return true;
+  }
+
 
 </script>
