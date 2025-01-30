@@ -49,5 +49,7 @@ router.get('/adminReturn', auth.checkSessionAdmin,adminController.loadReturns)
 router.get('/return-confirm', auth.checkSessionAdmin,adminController.markReturn)
 router.get('/salesReport', auth.checkSessionAdmin, adminController.loadSales)
 router.get('/downloadReport/:format', adminController.downloadReport);
+router.get('/loadCoupons', auth.checkSessionAdmin, adminController.loadCoupons)
+router.get('/remove-coupon/:id', auth.checkSessionAdmin, adminController.removeCoupon)
 
 module.exports = router;

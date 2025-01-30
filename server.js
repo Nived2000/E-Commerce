@@ -10,19 +10,12 @@ const connectDB = require('./db/config');
 const userRouter = require('./routes/user');
 const adminRouter = require('./routes/admin');
 const rateLimit = require('express-rate-limit');
+const cartWishlistMiddleware = require('./middlewares/cartWishlistMiddleware')
 
 require('dotenv').config();
 require('./passport');
 
 const app = express();
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute window
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests, please try again later.',
-  headers: true, // Send rate limit info in the response headers
-});
-
-app.use(limiter);
 // Connect to the database
 connectDB();
 // Middleware
@@ -163,7 +156,7 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Routes
-app.use('/user', userRouter);
+app.use('/user',cartWishlistMiddleware, userRouter);
 app.use('/admin', adminRouter);
 
 // Start the server

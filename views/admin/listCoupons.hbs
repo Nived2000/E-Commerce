@@ -49,58 +49,40 @@
 <!-- User Table -->
 <div class="container mt-4">
     <div class="table-heading text-center">
-        <h2 class="text-uppercase">order details</h2>
+        <h2 class="text-uppercase">Coupon details</h2>
 
     </div>
+    <div class="d-flex flex-column align-items-center mt-4">
+
+  <a href="/admin/addCoupon" class="btn btn-custom-yellow mt-0 mb-2">Add Coupons</a>
+</div>
     <table class="table table-bordered custom-table">
         <thead>
             <tr>
                 <th scope="col">Sl. No</th>
-                <th scope="col">User</th>
-                <th scope="col">Order ID</th>
-                <th scope="col">Ordered On</th>
-                <th scope="col">Delivery Status</th>
+                <th scope="col">Coupon ID</th>
+                <th scope="col">Coupon Code</th>
+                <th scope="col">Available Above</th>
+                <th scope="col">Discount (Amount/Percentage)</th>
                 <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody>
-            {{#each orders}}
+            {{#each coupons}}
     <tr>
         <th scope="row">{{@index}}</th>
-        <td>{{this.userEmail}}</td>
-        <td>{{this.orderId}}</td>
-        <td>{{formatDate this.createdAt}}</td>
-        <td>{{this.deliveryStatus}}</td>
-        {{#switch this.deliveryStatus}}
-            {{#case "In Transit"}}
-                <td class="text-center">
-                    <a href="/admin/mark-as-delivered/{{this.orderId}}" class="me-2">
-                        <button class="btn btn-success btn-sm d-inline-flex align-items-center">
-                            <i class="bi bi-check-circle me-1"></i> Mark as Delivered
-                        </button>
-                    </a>
-                    <a href="/admin/admin-order-cancel/{{this.orderId}}" class="me-2">
-                        <button class="btn btn-danger btn-sm d-inline-flex align-items-center">
-                            <i class="bi bi-x-circle me-1"></i> Cancel Order
-                        </button>
-                    </a>
-                </td>
-            {{/case}}
-            {{#case "Order Cancelled"}}
-                <td class="text-center">
-                    <span class="badge badge-secondary text-dark">Order Cancelled</span>
-                </td>
-            {{/case}}
-            {{#default}}
-                <td class="text-center">
-                    <a href="/admin/mark-as-not-delivered/{{this.orderId}}">
-                        <button class="btn btn-danger btn-sm d-inline-flex align-items-center">
-                            <i class="bi bi-x-circle me-1"></i> Mark as Not Delivered
-                        </button>
-                    </a>
-                </td>
-            {{/default}}
-        {{/switch}}
+        <td>{{this._id}}</td>
+        <td>{{this.couponName}}</td>
+        <td>{{this.availableAfter}}</td>
+        {{#if this.discountAmount}}
+        <td>{{this.discountAmount}}</td>
+        {{else}}
+        <td>{{this.discountPercentage}} %</td>
+        {{/if}}
+        <td>
+    <button class="btn btn-outline-danger remove-coupon-btn" data-id="{{this._id}}">Remove Coupon</button>
+</td>
+
     </tr>
 {{/each}}
 
@@ -110,18 +92,18 @@
 </div>
 <div class="pagination-container mb-5">
     {{#if previousPage}}
-        <a href="/admin/order?page={{previousPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Previous</a>
+        <a href="/admin/loadCoupons?page={{previousPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Previous</a>
     {{/if}}
     
     <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
 
     {{#if nextPage}}
-        <a href="/admin/order?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Next</a>
+        <a href="/admin/loadCoupons?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Next</a>
     {{/if}}
 
     <!-- Add option to go to the next page directly -->
     {{#if nextPage}}
-        <a href="/admin/order?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-success pagination-btn">Go to Next Page</a>
+        <a href="/admin/loadCoupons?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-success pagination-btn">Go to Next Page</a>
     {{/if}}
 </div>
 <script>
@@ -135,5 +117,33 @@
             text: message,
         });
     }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        // Attach event listeners to all "Remove Coupon" buttons
+        const removeButtons = document.querySelectorAll('.remove-coupon-btn');
 
+        removeButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+
+                const couponId = button.getAttribute('data-id');
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "Do you want to remove this coupon? This action cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Redirect to the remove coupon route
+                        window.location.href = `/admin/remove-coupon/${couponId}`;
+                    }
+                });
+            });
+        });
+    });
 </script>

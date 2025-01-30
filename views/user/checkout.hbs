@@ -8,64 +8,78 @@
                 <h5 class="section-title position-relative text-uppercase mb-3">
                     <span class="bg-secondary pr-3">Billing Address</span>
                 </h5>
+
+                <!-- Box for Choose Existing Address (full width) -->
                 <div class="bg-light p-30 mb-5">
-                    <div class="row">
-                        <div class="col-12">
-                            <h4>Choose Existing Address</h4>
-                            <div class="address-cards d-flex flex-wrap">
-                                {{#each address}}
-                                <div class="card address-card m-2" data-id="{{this._id}}"
-                                    style="cursor: pointer; width: 18rem; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Address #{{increment @index }}</h5>
-                                        <p class="card-text">
-                                            {{this.line1}}<br>
-                                            {{this.city}}, {{this.state}}, {{this.country}}<br>
-                                            ZIP: {{this.zipCode}}
-                                        </p>
-                                    </div>
-                                </div>
-                                {{/each}}
+                    <h4>Choose Existing Address</h4>
+                    <div class="address-cards d-flex flex-wrap">
+                        {{#each address}}
+                        <div class="card address-card m-2" data-id="{{this._id}}"
+                            style="cursor: pointer; width: 18rem; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
+                            <div class="card-body">
+                                <h5 class="card-title">Address #{{increment @index }}</h5>
+                                <p class="card-text">
+                                    {{this.line1}}<br>
+                                    {{this.city}}, {{this.state}}, {{this.country}}<br>
+                                    ZIP: {{this.zipCode}}
+                                </p>
                             </div>
                         </div>
+                        {{/each}}
+                    </div>
+                </div>
 
-                        <h4 class="mt-4 mb-4">Or Enter Manually</h4>
-                        <!-- Form fields to populate when an address is selected -->
-                        <div class="col-md-6 form-group">
+                <!-- Partition (border) between the two sections -->
+                <hr style="border-top: 2px solid #ddd; margin: 40px 0;">
+
+                <!-- Box for Add New Address (full width, below Choose Existing Address) -->
+                <div class="bg-light p-30">
+                    <h4>Add New Address</h4>
+                    <!-- Address Form -->
+                    <div class="row">
+                        <div class="form-group col-md-6">
                             <label>Full Name</label>
                             <input class="form-control" type="text" name="name" value="{{user.name}}" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                        <div class="form-group col-md-6">
                             <label>E-mail</label>
                             <input class="form-control" type="email" name="email" value="{{user.email}}" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-6">
                             <label>Mobile No</label>
                             <input class="form-control" type="text" name="phone" value="{{user.phone}}" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                        <div class="form-group col-md-6">
                             <label>Address Line 1</label>
                             <input class="form-control" type="text" name="line1" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-6">
                             <label>City</label>
                             <input class="form-control" type="text" name="city" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                        <div class="form-group col-md-6">
                             <label>State</label>
                             <input class="form-control" type="text" name="state" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-6">
                             <label>Country</label>
                             <input class="form-control" type="text" name="country" required>
                         </div>
-                        <div class="col-md-6 form-group">
+                        <div class="form-group col-md-6">
                             <label>ZIP Code</label>
                             <input class="form-control" type="text" name="zipCode" required>
                         </div>
                     </div>
                 </div>
+
             </div>
+
 
 
             <!-- Order Summary -->
@@ -241,12 +255,17 @@
         const applyCouponButton = document.getElementById('applyCouponButton');
         const removeCouponButton = document.getElementById('removeCouponButton');
 
-        // Add an event listener to clear the input field
+        // Address inputs
+        const line1Input = document.querySelector('input[name="line1"]');
+        const cityInput = document.querySelector('input[name="city"]');
+        const stateInput = document.querySelector('input[name="state"]');
+        const countryInput = document.querySelector('input[name="country"]');
+        const zipCodeInput = document.querySelector('input[name="zipCode"]');
+
+        // Remove Coupon Functionality
         removeCouponButton.addEventListener('click', () => {
             couponInput.value = ''; // Clear the input field
         });
-
-        // Example Grand Total and Wallet Balance (to be dynamically fetched)
         let originalGrandTotal = parseFloat(grandTotalInput.value);
         let walletBalance = parseFloat(walletBalanceEl.textContent.replace('₹', '').trim());
         let appliedCouponDiscount = 0;
@@ -262,30 +281,34 @@
             discountPercentage: coupon.getAttribute('data-percentage') ? parseInt(coupon.getAttribute('data-percentage'), 10) : null,
         }));
 
-        // Apply Coupon Button Logic
+        // Apply Coupon Button Logic with Validation
         applyCouponButton.addEventListener('click', (event) => {
             event.preventDefault();
             const couponCode = couponInput.value.trim();
 
-            // Get the coupon matching the entered code from couponData
+            if (!couponCode) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Empty Coupon Code',
+                    text: 'Please enter a valid coupon code.',
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
+
             const coupon = couponData.find((c) => c.couponName.toUpperCase() === couponCode.toUpperCase());
 
             if (coupon && originalGrandTotal >= coupon.availableAfter) {
                 let discount = 0;
-
-                // Calculate discount based on the type
                 if (coupon.discountAmount) {
                     discount = coupon.discountAmount;
+                    console.log(discount)
                 } else if (coupon.discountPercentage) {
+
                     discount = Math.ceil((originalGrandTotal * coupon.discountPercentage) / 100);
                 }
-
-
-                // Update the grand total
-
                 appliedCouponDiscount = discount;
                 updateTotals();
-                console.log(appliedCouponDiscount)
 
                 Swal.fire({
                     icon: 'success',
@@ -313,13 +336,10 @@
             }
         });
 
-
-
         // Update Totals
         const updateTotals = () => {
             const walletDiscount = parseFloat(walletUsageInput.value) || 0;
 
-            // Ensure wallet discount does not exceed cart total or wallet balance
             if (walletDiscount > originalGrandTotal || walletDiscount > walletBalance) {
                 Swal.fire({
                     icon: 'warning',
@@ -327,18 +347,27 @@
                     text: 'The wallet amount cannot exceed the cart total or your wallet balance.',
                     confirmButtonText: 'OK',
                 }).then(() => {
-                    walletUsageInput.value = Math.min(walletBalance, originalGrandTotal); // Reset to valid value
+                    walletUsageInput.value = Math.min(walletBalance, originalGrandTotal);
+                    updateTotals();
+                });
+                return;
+            }
+            else if (walletDiscount < 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Wallet Usage',
+                    text: 'The wallet amount should be more than 0',
+                    confirmButtonText: 'OK',
+                }).then(() => {
+                    walletUsageInput.value = 0;
                     updateTotals();
                 });
                 return;
             }
 
             let newGrandTotal = originalGrandTotal - appliedCouponDiscount - walletDiscount;
-
-            // Ensure total doesn't go below 0
             newGrandTotal = Math.max(newGrandTotal, 0);
 
-            // Update UI elements
             discountAmountEl.textContent = `${appliedCouponDiscount} ₹`;
             afterWalletDiscountEl.textContent = `${newGrandTotal} ₹`;
             updatedGrandTotalEl.textContent = `${newGrandTotal} ₹`;
@@ -351,35 +380,70 @@
             updateTotals();
         });
 
-        // Form Submission Logic
+        // ZIP Code Validation
+        const isValidZipCode = (zip) => /^[0-9]{5,6}$/.test(zip);
+
+        // Form Submission Logic with Address Validation
         form.addEventListener('submit', (event) => {
-            const couponCode = couponInput.value.trim();
-            if (couponCode) {
-                const baseAction = form.getAttribute('action');
-                form.setAttribute(
-                    'action',
-                    `${baseAction}?couponCode=${encodeURIComponent(couponCode)}&walletUsage=${encodeURIComponent(walletUsage.value)}`
-                );
+            event.preventDefault(); // Prevent form submission if validation fails
+
+            const couponCode = couponInput.value.trim() || "NONE";
+            const zipCode = zipCodeInput.value.trim();
+            const paymentMethod = document.querySelector('input[type="radio"]:checked')
+            const grandTotal = parseInt(grandTotalInput.value, 10); // Using base 10 for decimal number parsing
+
+            if (paymentMethod.value === "Cash on Delivery" && grandTotal >= 1000) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Order Cannot be placed',
+                    text: 'Cash on Delivery is only applicable for orders below 1000',
+                    confirmButtonText: 'OK',
+                });
+                return;
             }
+            if (!isValidZipCode(zipCode)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid ZIP Code',
+                    text: 'Please enter a valid 5 or 6-digit ZIP code.',
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
+
+            if (!line1Input.value.trim() || !cityInput.value.trim() || !stateInput.value.trim() || !countryInput.value.trim()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Incomplete Address',
+                    text: 'Please select or enter a valid address.',
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
+
+            const baseAction = form.getAttribute('action');
+            form.setAttribute(
+                'action',
+                `${baseAction}?couponCode=${encodeURIComponent(couponCode)}&walletUsage=${encodeURIComponent(walletUsageInput.value)}`
+            );
+            form.submit();
         });
-    });
 
-    document.querySelectorAll('.address-card').forEach((card) => {
-        card.addEventListener('click', function () {
-            const cardText = this.querySelector('.card-text').innerText;
+        // Address Selection Event
+        document.querySelectorAll('.address-card').forEach((card) => {
+            card.addEventListener('click', function () {
+                const cardText = this.querySelector('.card-text').innerText;
+                const lines = cardText.split('\n').map((line) => line.trim());
+                const line1 = lines[0] || '';
+                const [city, state, country] = (lines[1]?.split(',') || []).map((item) => item.trim());
+                const zipCode = (lines[2]?.split(':')[1] || '').trim();
 
-            // Extract address details with fallback for unexpected formats
-            const lines = cardText.split('\n').map((line) => line.trim());
-            const line1 = lines[0] || '';
-            const [city, state, country] = (lines[1]?.split(',') || []).map((item) => item.trim());
-            const zipCode = (lines[2]?.split(':')[1] || '').trim();
-
-            // Populate the form inputs with the selected address data
-            document.querySelector('input[name="line1"]').value = line1;
-            document.querySelector('input[name="city"]').value = city || '';
-            document.querySelector('input[name="state"]').value = state || '';
-            document.querySelector('input[name="country"]').value = country || '';
-            document.querySelector('input[name="zipCode"]').value = zipCode || '';
+                line1Input.value = line1;
+                cityInput.value = city || '';
+                stateInput.value = state || '';
+                countryInput.value = country || '';
+                zipCodeInput.value = zipCode || '';
+            });
         });
     });
 

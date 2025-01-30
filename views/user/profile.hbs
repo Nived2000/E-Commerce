@@ -42,6 +42,8 @@
                             {{/each}}
                         </div>
                     </div>
+
+                    <!-- Wallet Section -->
                     <div class="mb-3 p-3 rounded border"
                         style="background-color: #f8f9fa; border-left: 5px solid #ffc800; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
                         <strong class="text-dark" style="font-size: 1.1em;">Wallet Balance:</strong>
@@ -49,9 +51,38 @@
                             {{walletAmount}}</span>
                     </div>
 
+                    <!-- Transaction History Section -->
+                    <div class="mb-3 p-3 rounded border"
+                        style="background-color: #f8f9fa; border-left: 5px solid #ffc800; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); max-height: 300px; overflow-y: auto;">
+                        <strong class="text-dark"
+                            style="font-size: 1.1em; margin-bottom: 5px; display: block;">Transaction History:</strong>
+                        <ul class="list-group mt-2" style="padding: 0;">
+                            {{#each transactions}}
+                            <li class="list-group-item d-flex flex-column align-items-start"
+                                style="border: none; border-bottom: 1px solid #ddd; background-color: transparent; padding: 10px;">
+                                <div class="d-flex justify-content-between w-100">
+                                    <span>
+                                        <strong style="font-size: 1em;">
+                                            {{#ifEquals type "credit"}}
+                                            <span style="color: #2d6a4f;">+ ₹{{amount}} Credited to Wallet</span>
+                                            {{else}}
+                                            <span style="color: #d90429;">- ₹{{amount}} Debited from Wallet</span>
+                                            {{/ifEquals}}
+                                        </strong>
+                                    </span>
+                                    <span style="font-size: 0.9em; color: #6c757d;">{{formatDate createdAt}}</span>
+                                </div>
+                                <div style="font-size: 0.85em; color: #495057; margin-top: 5px;">
+                                    Transaction ID: <span style="font-family: monospace;">{{_id}}</span>
+                                </div>
+                            </li>
+                            {{/each}}
+                        </ul>
+                    </div>
+
+
                 </div>
             </div>
-
 
             <!-- Right Column: Add Address -->
             <div class="card mb-3 flex-grow-1 ml-lg-3">
@@ -90,11 +121,8 @@
                 </div>
             </div>
         </div>
-
-
-
-
     </div>
+
 </div>
 
 <input type="hidden" value="{{message}}" id="message">

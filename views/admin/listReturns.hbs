@@ -57,7 +57,7 @@
         <thead>
             <tr>
                 <th scope="col">Sl. No</th>
-                <th scope="col">User ID</th>
+                <th scope="col">User</th>
                 <th scope="col">Product Name</th>
                 <th scope="col">Order ID</th>
                 <th scope="col">Ordered On</th>
@@ -69,7 +69,7 @@
            {{#each returns}}
 <tr>
     <th scope="row">{{increment @index}}</th>
-    <td>{{this.userId}}</td>
+    <td>{{this.userEmail}}</td>
     <td>{{this.products.productName}}</td>
     <td>{{this.orderId}}</td>
     <td>{{formatDate this.createdAt}}</td>

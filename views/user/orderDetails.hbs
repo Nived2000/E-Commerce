@@ -6,39 +6,40 @@
         <h5 class="mb-0">Order Details</h5>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover table-striped text-center">
-                <thead class="thead-light">
-                    <tr style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
-                        <th scope="col">SI.No</th>
-                        <th scope="col">Products</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Quantity</th>
-                        <th scope="col">Total</th>
-                        {{#ifEquals deliveryStatus "Delivered"}}
-                        <th scope="col">Action</th>
-                        {{/ifEquals}}
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#each products}}
-                    <tr>
-                        <td>{{increment @index}}</td>
-                        <td>
-                            <b>{{this.productName}}</b>
-                        </td>
-                        <td>{{this.price}} ₹</td>
-                        <td>{{this.quantity}}</td>
-                        <td>{{multiply this.price this.quantity}} ₹</td>
-                        {{#ifEquals ../deliveryStatus "Delivered"}}
-                        <td>
-                            {{#if this.returnStatus}}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-striped text-center">
+            <thead class="thead-light">
+                <tr style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
+                    <th scope="col">SI.No</th>
+                    <th scope="col">Products</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Total</th>
+                    {{#ifEquals deliveryStatus "Delivered"}}
+                    <th scope="col">Action</th>
+                    {{/ifEquals}}
+                    <th scope="col">Return Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each products}}
+                <tr>
+                    <td>{{increment @index}}</td>
+                    <td>
+                        <b>{{this.productName}}</b>
+                    </td>
+                    <td>{{this.price}} ₹</td>
+                    <td>{{this.quantity}}</td>
+                    <td>{{multiply this.price this.quantity}} ₹</td>
+                    {{#ifEquals ../deliveryStatus "Delivered"}}
+                    <td>
+                        {{#if this.returnStatus}}
                             {{#if this.adminApproved}}
                             <span class="badge badge-success">Product Returned</span>
                             {{else}}
                             <span class="badge badge-warning">Return Pending</span>
                             {{/if}}
-                            {{else}}
+                        {{else}}
                             {{#if ../returnPossible}}
                             <a href="javascript:void(0)" style="color: black; background-color:#ffc800" class="btn btn-sm rounded shadow-sm return-product" data-product-id="{{this.id}}">
                                 Return Product
@@ -46,17 +47,27 @@
                             {{else}}
                             <p>Return Not Possible</p>
                             {{/if}}
-                             {{/if}}
-                        </td>
-                        {{/ifEquals}}
-                    </tr>
-                    {{/each}}
-                </tbody>
-            </table>
-        </div>
+                        {{/if}}
+                    </td>
+                    {{/ifEquals}}
 
-        <input type="hidden" value="{{message}}" id="message">
+                    <!-- Display Return Reason -->
+                    <td>
+                        {{#if this.returnReason}}
+                            <span>{{this.returnReason}}</span>
+                        {{else}}
+                            <span>Not Returned yet</span>
+                        {{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
     </div>
+
+    <input type="hidden" value="{{message}}" id="message">
+</div>
+
 </div>
 
 <script>

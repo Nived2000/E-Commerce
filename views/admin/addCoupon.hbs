@@ -89,11 +89,11 @@
     const couponPercentage = document.getElementById("couponPercentage").value;
 
     // Validate if coupon discount is at least 1000 less than available after price
-    if (parseInt(couponDiscount) >= parseInt(availableAfter) - 1000) {
+    if (parseInt(couponDiscount) * 5 >= parseInt(availableAfter) ) {
       Swal.fire({
         icon: 'error',
         title: 'Validation Error',
-        text: 'Coupon discount should be at least 1000 rupees less than the available after price.',
+        text: 'Coupon discount should be maximum one-fifth of the total amount',
       });
       return false;
     }
