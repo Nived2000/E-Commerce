@@ -55,3 +55,33 @@
     background-color: #2C343A;
     border-radius: 5px;
   }
+
+
+  /* Custom Bullets */
+ul li {
+  position: relative; /* For positioning the custom bullet */
+  padding-left: 25px; /* Space for the custom bullet */
+  font-size: 1rem; /* Font size for list items */
+  color: #555; /* List item color */
+}
+
+/* Custom Circle Bullet */
+ul li::before {
+  content: ''; /* Empty content for the custom bullet */
+  position: absolute; /* Position relative to the list item */
+  left: 0; /* Place it to the left */
+  top: 50%; /* Vertically align in the center */
+  transform: translateY(-50%); /* Fine-tune vertical alignment */
+  width: 8px; /* Bullet width */
+  height: 8px; /* Bullet height */
+  background-color: #ffc800; /* Bullet color (you can change it) */
+  border-radius: 50%; /* Make it a circle */
+}
+
+/* Optional: Change the bullet to an icon or other styles */
+ul li::before {
+  background-color: #75b8a4; /* Custom bullet color */
+  width: 10px;
+  height: 10px;
+  border-radius: 50%; /* Circle bullet */
+}

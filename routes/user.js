@@ -81,4 +81,7 @@ router.get('/wishlist', auth.checkSession, userController.loadWishlist)
 router.get('/addToWishlist/:id', auth.checkSession, userController.addToWishlist)
 router.get('/remove-from-wishlist/:id', auth.checkSession, userController.wishlistRemove)
 
+router.get('/retry-payment/:id', auth.checkSession, userController.retryPayment)
+router.get('/downloadInvoice/:id', auth.checkSession, userController.downloadInvoice)
+
 module.exports = router;

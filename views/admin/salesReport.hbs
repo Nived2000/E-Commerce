@@ -5,13 +5,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #3D464D; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+<nav class="navbar navbar-expand-lg navbar-dark"
+  style="background-color: #3D464D; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
   <div class="container-fluid">
     <a href="/" class="navbar-brand d-flex align-items-center">
       <span style="color:#3D464D; background-color:#ffc800;" class="h1 text-uppercase px-2">M</span>
       <span style="color:#ffc800; background-color:#3D464D;" class="h1 text-uppercase px-2">S</span>
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
@@ -39,6 +41,80 @@
 <!-- Sales Report Section -->
 <div class="container mt-5">
   <h2 class="text-center text-uppercase mb-4 text-dark">Sales Report</h2>
+
+  <div class="row mb-4 p-4 bg-light rounded shadow-sm">
+  <div class="col-md-6">
+    <label for="chartFilter" class="form-label">Filter By</label>
+    <select id="chartFilter" class="form-select rounded-pill">
+      <option value="daily">Sales Per Day (Week)</option>
+      <option value="weekly">Sales Per Week (Month)</option>
+      <option value="monthly">Sales Per Month (Year)</option>
+    </select>
+  </div>
+  <div class="col-md-6 d-flex align-items-end">
+    <button onclick="updateSalesChart()" class="btn btn-dark rounded-pill w-50">Generate Sales Chart</button>
+  </div>
+</div>
+
+<!-- Sales Chart -->
+<div class="row mb-4" style="height: 70vh;"> <!-- Full viewport height -->
+  <!-- Chart Section (Left Side) -->
+  <div class="col-md-6 d-flex" style="height: 100%;">
+    <div class="card shadow-sm w-100" style="flex: 1;">
+      <div class="card-body" style="height: 100%;">
+        <canvas id="salesChart" style="height: 100%; width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side (Top Products, Categories, Brands) -->
+  <div class="col-md-6 d-flex flex-column" style="height: 100%;">
+    <!-- Top Products List -->
+    <div class="card shadow-sm flex-fill" style="flex: 1;">
+      <div class="card-body">
+        <h4 class="text-center mb-3">Top Products</h4>
+        <ul class="list-unstyled">
+          {{#each topProducts}}
+          <li>{{this.name}}</li>
+          {{/each}}
+        </ul>
+      </div>
+    </div>
+
+    <div class="row mt-2" style="flex: 1;">
+      <!-- Top Categories List -->
+      <div class="col-6 d-flex" style="height: 100%;">
+        <div class="card shadow-sm w-100" style="flex: 1;">
+          <div class="card-body">
+            <h4 class="text-center mb-3">Top Categories</h4>
+            <ul class="list-unstyled">
+              {{#each topCategoryArray}}
+              <li>{{this}}</li>
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Brands List -->
+      <div class="col-6 d-flex" style="height: 100%;">
+        <div class="card shadow-sm w-100" style="flex: 1;">
+          <div class="card-body">
+            <h4 class="text-center mb-3">Top Brands</h4>
+            <ul class="list-unstyled">
+              {{#each topBrandsArray}}
+              <li>{{this}}</li>
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
   <!-- Filters -->
   <div class="row mb-4 p-4 bg-light rounded shadow-sm">
@@ -92,6 +168,7 @@
   </div>
 
   <!-- Report Table -->
+  <p class="font-weight-bold">Sales from {{formatDate startDate}} to {{formatDate endDate}}</p>
   <div class="table-responsive shadow-sm">
     <table class="table table-striped table-hover text-center">
       <thead class="table-dark">
@@ -105,20 +182,20 @@
       </thead>
       <tbody id="salesReportTable">
         {{#each orders}}
-          <tr>
-            <td>{{increment @index}}</td>
-            <td>{{this.orderId}}</td>
-            <td>{{formatDate this.createdAt}}</td>
-            <td>{{this.userId}}</td>
-            <td>{{this.orderAmount}}</td>
-          </tr>
+        <tr>
+          <td>{{increment @index}}</td>
+          <td>{{this.orderId}}</td>
+          <td>{{formatDate this.createdAt}}</td>
+          <td>{{this.address.email}}</td>
+          <td>{{this.orderAmount}}</td>
+        </tr>
         {{/each}}
       </tbody>
     </table>
   </div>
 
   <!-- Download Options -->
-  <div class="row mt-4">
+  <div class="row mt-4 mb-4">
     <div class="col-md-6">
       <button class="btn btn-danger w-100 rounded-pill" onclick="downloadReport('pdf')">
         <i class="fas fa-file-pdf"></i> Download as PDF
@@ -132,49 +209,94 @@
   </div>
   <input type="hidden" value="{{message}}" id="message">
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
- let globalStartDate = null; // Global variable for startDate
-let globalEndDate = null;   // Global variable for endDate
-let filterType = null
+  // Initialize the chart variable
+  let salesChart;
 
-// Function to extract query parameters from the URL
-function getQueryParam(param) {
+  // Function to generate the chart
+  function generateChart() {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const data = JSON.parse('{{{ data }}}');
+    const labels = JSON.parse('{{{ labels }}}');
+
+    salesChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Sales',
+          data: data,
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: Math.max(...data) + 2, // Add 2 to the max value of the data
+            ticks: {
+              stepSize: 1  // Set the step size to 1 for y-axis
+            }
+          }
+        }
+      }
+    });
+
+  }
+
+  // Function to update the chart based on the selected filter
+  function updateSalesChart() {
+    const chartFilter = document.getElementById('chartFilter').value;
+    window.location.href = `/admin/salesReport?chartFilter=${chartFilter}`;
+  }
+
+  // Generate the chart when the page loads
+  window.onload = generateChart;
+
+  let globalStartDate = null; // Global variable for startDate
+  let globalEndDate = null;   // Global variable for endDate
+  let filterType = null
+
+  // Function to extract query parameters from the URL
+  function getQueryParam(param) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(param);
-}
+  }
 
-function filterSalesReport() {
+  function filterSalesReport() {
     // Fetch values from input fields
     globalStartDate = document.getElementById('startDate').value;
     globalEndDate = document.getElementById('endDate').value;
     filterType = document.getElementById('filterType').value;
 
     // Check if dates are selected
-    if ((!globalStartDate || !globalEndDate ) && (!filterType)) {
-        Swal.fire({
-            icon: 'warning',
-            text: 'Please select both start and end dates.',
-        });
-        return;
+    if ((!globalStartDate || !globalEndDate) && (!filterType)) {
+      Swal.fire({
+        icon: 'warning',
+        text: 'Please select both start and end dates.',
+      });
+      return;
     }
 
     // Construct the URL and navigate
     const url = `/admin/salesReport?startDate=${encodeURIComponent(globalStartDate)}&endDate=${encodeURIComponent(globalEndDate)}&filter=${encodeURIComponent(filterType)}`;
     window.location.href = url;
-}
+  }
 
-function downloadReport(format) {
+  function downloadReport(format) {
     // Check if global dates are available or extract from URL
     globalStartDate = globalStartDate || getQueryParam('startDate');
     globalEndDate = globalEndDate || getQueryParam('endDate');
 
     if (!globalStartDate || !globalEndDate) {
-        Swal.fire({
-            icon: 'warning',
-            text: 'Please filter the sales report first to select a date range.',
-        });
-        return;
+      Swal.fire({
+        icon: 'warning',
+        text: 'Please filter the sales report first to select a date range.',
+      });
+      return;
     }
 
     // Construct the download URL
@@ -182,24 +304,24 @@ function downloadReport(format) {
 
     // Show a SweetAlert and initiate download
     Swal.fire({
-        title: 'Downloading...',
-        text: `Your ${format.toUpperCase()} report is being prepared.`,
-        icon: 'info',
-        showConfirmButton: false,
-        timer: 2000,
+      title: 'Downloading...',
+      text: `Your ${format.toUpperCase()} report is being prepared.`,
+      icon: 'info',
+      showConfirmButton: false,
+      timer: 2000,
     }).then(() => {
-        window.location.href = url;
+      window.location.href = url;
     });
-}
+  }
 
-// Show a message if one exists
-const message = document.getElementById('message')?.value;
-if (message) {
+  // Show a message if one exists
+  const message = document.getElementById('message')?.value;
+  if (message) {
     Swal.fire({
-        icon: 'info',
-        text: message,
+      icon: 'info',
+      text: message,
     });
-}
+  }
 
 
 </script>

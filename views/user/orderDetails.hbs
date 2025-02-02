@@ -6,68 +6,101 @@
         <h5 class="mb-0">Order Details</h5>
     </div>
     <div class="card-body">
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover table-striped text-center">
-            <thead class="thead-light">
-                <tr style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
-                    <th scope="col">SI.No</th>
-                    <th scope="col">Products</th>
-                    <th scope="col">Price</th>
-                    <th scope="col">Quantity</th>
-                    <th scope="col">Total</th>
-                    {{#ifEquals deliveryStatus "Delivered"}}
-                    <th scope="col">Action</th>
-                    {{/ifEquals}}
-                    <th scope="col">Return Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#each products}}
-                <tr>
-                    <td>{{increment @index}}</td>
-                    <td>
-                        <b>{{this.productName}}</b>
-                    </td>
-                    <td>{{this.price}} ₹</td>
-                    <td>{{this.quantity}}</td>
-                    <td>{{multiply this.price this.quantity}} ₹</td>
-                    {{#ifEquals ../deliveryStatus "Delivered"}}
-                    <td>
-                        {{#if this.returnStatus}}
+
+        <!-- Order & Address Information Side by Side -->
+        <div class="mb-3 p-3 border rounded" style="background: #f8f9fa;">
+            <div class="row">
+                <!-- Order Information -->
+                <div class="col-md-6">
+                    <h6><b>Order Information</b></h6>
+                    <p><strong>Order Date:</strong> {{formatDate order.createdAt}}</p>
+                    <p><strong>Coupon Discount:</strong> {{order.couponDiscount}} ₹</p>
+                    <p><strong>Wallet Amount Used:</strong> {{order.walletAmount}} ₹</p>
+                    <p><strong>Email:</strong> {{order.address.email}}</p>
+                    <p><strong>Phone:</strong> {{order.address.phone}}</p>
+                </div>
+
+                <div class="col-md-6">
+                    <h6><b>Delivery Address</b></h6>
+                    <p><strong>Address Line 1:</strong> {{order.address.line1}}</p>
+                    <p><strong>City:</strong> {{order.address.city}}</p>
+                    <p><strong>State:</strong> {{order.address.state}}</p>
+                    <p><strong>Country:</strong> {{order.address.country}}</p>
+                    <p><strong>Zip Code:</strong> {{order.address.zipCode}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items Table -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover table-striped text-center">
+                <thead class="thead-light">
+                    <tr style="background: linear-gradient(to right, #3c4b64, #59668e); color: white;">
+                        <th scope="col">SI.No</th>
+                        <th scope="col">Products</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Total</th>
+                        {{#ifEquals deliveryStatus "Delivered"}}
+                        <th scope="col">Action</th>
+                        {{/ifEquals}}
+                        <th scope="col">Return Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each products}}
+                    <tr>
+                        <td>{{increment @index}}</td>
+                        <td><b>{{this.productName}}</b></td>
+                        <td>{{this.price}} ₹</td>
+                        <td>{{this.quantity}}</td>
+                        <td>{{multiply this.price this.quantity}} ₹</td>
+                        {{#ifEquals ../deliveryStatus "Delivered"}}
+                        <td>
+                            {{#if this.returnStatus}}
                             {{#if this.adminApproved}}
                             <span class="badge badge-success">Product Returned</span>
                             {{else}}
                             <span class="badge badge-warning">Return Pending</span>
                             {{/if}}
-                        {{else}}
+                            {{else}}
                             {{#if ../returnPossible}}
-                            <a href="javascript:void(0)" style="color: black; background-color:#ffc800" class="btn btn-sm rounded shadow-sm return-product" data-product-id="{{this.id}}">
+                            <a href="javascript:void(0)" style="color: black; background-color:#ffc800"
+                                class="btn btn-sm rounded shadow-sm return-product" data-product-id="{{this.id}}">
                                 Return Product
                             </a>
                             {{else}}
                             <p>Return Not Possible</p>
                             {{/if}}
-                        {{/if}}
-                    </td>
-                    {{/ifEquals}}
+                            {{/if}}
+                        </td>
+                        {{/ifEquals}}
 
-                    <!-- Display Return Reason -->
-                    <td>
-                        {{#if this.returnReason}}
+                        <!-- Display Return Reason -->
+                        <td>
+                            {{#if this.returnReason}}
                             <span>{{this.returnReason}}</span>
-                        {{else}}
+                            {{else}}
                             <span>Not Returned yet</span>
-                        {{/if}}
-                    </td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+                            {{/if}}
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-center">
+            <div class="col-md-6">
+                <button class="btn btn-danger w-100 rounded-pill" onclick="downloadReport()">
+                    <i class="fas fa-file-pdf"></i> Download Invoice
+                </button>
+            </div>
+        </div>
+
+
+        <input type="hidden" value="{{message}}" id="message">
     </div>
-
-    <input type="hidden" value="{{message}}" id="message">
-</div>
-
 </div>
 
 <script>
@@ -80,7 +113,7 @@
     }
 
     // Handle the return product click event
-    $(document).on('click', '.return-product', function() {
+    $(document).on('click', '.return-product', function () {
         const productId = $(this).data('product-id');
 
         // Open SweetAlert modal to ask for return reason
@@ -93,7 +126,6 @@
             cancelButtonText: 'Cancel',
             preConfirm: (reason) => {
                 if (reason) {
-                    // Redirect to the return product route with the reason as a query parameter
                     window.location.href = `/user/returnProduct/${productId}?reason=${encodeURIComponent(reason)}`;
                 } else {
                     Swal.showValidationMessage('Please enter a return reason');
@@ -101,6 +133,22 @@
             }
         });
     });
+    function downloadReport() {
+
+        // Construct the download URL
+        const url = `/user/downloadInvoice/{{order.orderId}}`;
+
+        // Show a SweetAlert and initiate download
+        Swal.fire({
+            title: 'Downloading...',
+            text: `Your Invoice report is being prepared.`,
+            icon: 'info',
+            showConfirmButton: false,
+            timer: 2000,
+        }).then(() => {
+            window.location.href = url;
+        });
+    }
 </script>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

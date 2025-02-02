@@ -66,7 +66,7 @@
         <tbody>
             {{#each orders}}
     <tr>
-        <th scope="row">{{@index}}</th>
+        <th scope="row">{{increment @index}}</th>
         <td>{{this.userEmail}}</td>
         <td>{{this.orderId}}</td>
         <td>{{formatDate this.createdAt}}</td>

@@ -31,11 +31,13 @@ const orderSchema = new mongoose.Schema({
     address: addressSchema,
     paymentMethod: { type: String, required: true},
     orderAmount: { type: Number, required: true },
+    paymentStatus: { type: String, default: 'Pending' }, // Default to 'Pending' initially
+    razorpayOrderId: { type: String, default: '' }, // Default to '' initially
     walletAmount: { type: Number, required: true , default: 0},
     couponDiscount: { type: Number, required: true , default: 0},
     deliveryStatus: { type: String, default: "In Transit" },
-    createdAt: { type: Date, default: Date.now }, // Timestamp of cart creation
-    updatedAt: { type: Date, default: Date.now }, // Timestamp of last cart update
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }, 
 });
 
 const Order = mongoose.model('Order', orderSchema);

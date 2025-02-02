@@ -16,6 +16,9 @@ const saltRounds = 10;
 const passport = require('passport');
 const { log } = require('console');
 const Razorpay = require('razorpay');
+const PDFDocument = require('pdfkit'); // For PDF generation
+const path = require('path');
+const fs = require('fs');
 
 // In-memory storage for OTP (for demonstration purposes)
 let otpStorage = {};
@@ -922,8 +925,7 @@ const placeOrder = async (req, res) => {
 
 
         const orderAmount = filteredProducts.reduce((total, product) => total + product.price * product.quantity, 100) - couponDiscount - walletAmount;
-
-        // Handle Cash on Delivery
+        
         if (paymentMethod === "Cash on Delivery") {
             const order = new Order({
                 userId: user.userId,
@@ -938,7 +940,7 @@ const placeOrder = async (req, res) => {
 
             await order.save();
 
-            // Only update stock & wallet if order placement is successful
+            
             for (const product of filteredProducts) {
                 const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
                 if (currentProduct) {
@@ -949,7 +951,6 @@ const placeOrder = async (req, res) => {
                 }
             }
 
-            // Deduct wallet balance only after order success
             if (walletAmount > 0) {
                 await Wallet.updateOne({ userId: user.userId }, { $inc: { amountAvailable: -walletAmount } });
 
@@ -975,42 +976,46 @@ const placeOrder = async (req, res) => {
                 user,
                 hideFooter: true,
             });
+        }else if (paymentMethod === "Online Payment") {
+            const amountInPaise = Math.round(orderAmount * 100);
+            const razorpayOrder = await razorpay.orders.create({
+                amount: amountInPaise,
+                currency: "INR",
+                receipt: `receipt_${Date.now()}`,
+                notes: { email: user.email, phone: user.phone },
+            });
+        
+            // Save order in the database with status "Payment Pending"
+            const order = new Order({
+                userId: user.userId,
+                address: { name, phone, email, line1, state, city, country, zipCode },
+                products: filteredProducts,
+                paymentMethod,
+                orderAmount,
+                paymentStatus: "Pending", // Initially set to "Payment Pending"
+                razorpayOrderId: razorpayOrder.id,
+                walletAmount,
+                couponDiscount,
+                deliveryStatus: "Nil"
+            });
+        
+            await order.save();
+        
+            res.render("user/payment", {
+                orderId: razorpayOrder.id,
+                amount: razorpayOrder.amount,
+                key: process.env.RAZORPAY_KEY_ID,
+                user,
+                hideFooter: true,
+            });
         }
-
-        // Online Payment (Razorpay)
-        const amountInPaise = Math.round(orderAmount * 100);
-        const razorpayOrder = await razorpay.orders.create({
-            amount: amountInPaise,
-            currency: "INR",
-            receipt: `receipt_${Date.now()}`,
-            notes: { email: user.email, phone: user.phone },
-        });
-
-        req.session.tempOrder = {
-            userId: user.userId,
-            address: { name, phone, email, line1, state, city, country, zipCode },
-            products: filteredProducts,
-            paymentMethod,
-            orderAmount: amountInPaise,
-            razorpayOrderId: razorpayOrder.id,
-            walletAmount,
-            couponDiscount
-        };
-
-        res.render("user/payment", {
-            orderId: razorpayOrder.id,
-            amount: razorpayOrder.amount,
-            key: process.env.RAZORPAY_KEY_ID,
-            user,
-            hideFooter: true,
-        });
+        
 
     } catch (error) {
         console.error("Error placing order:", error.message);
         res.status(500).send("Error placing order. Please try again.");
     }
 };
-
 
 
 // Function to sort, filter, and paginate products based on user input
@@ -1202,43 +1207,54 @@ const orderDetails = async (req, res) => {
 
     let returnPossible = daysAfterOrdered <= 5;
 
-    res.render('user/orderDetails', { products, deliveryStatus, returnPossible });
+    res.render('user/orderDetails', { products, deliveryStatus, returnPossible, order });
 };
 
 const verifyPayment = async (req, res) => {
-    // Verifies payment using Razorpay's signature and creates a new order in the database.
     try {
         const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+        // Fetch the existing order with "Payment Pending" status
+        const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+
+        if (!order) {
+            return res.status(400).send("Order not found. Please try again.");
+        }
+
+        // Verify the payment signature
         const generatedSignature = crypto
             .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
             .digest('hex');
+
         if (generatedSignature !== razorpay_signature) {
             return res.status(400).send("Payment verification failed.");
         }
-        const tempOrder = req.session.tempOrder;
-        let actualAmount = tempOrder.orderAmount / 100
-        const newOrder = new Order({
-            userId: tempOrder.userId,
-            address: tempOrder.address,
-            products: tempOrder.products,
-            paymentMethod: tempOrder.paymentMethod,
-            orderAmount: actualAmount,
-            razorpayOrderId: razorpay_order_id,
-            razorpayPaymentId: razorpay_payment_id,
-        });
-        await newOrder.save();
+
+        // Update order status to "Completed" and add Razorpay payment ID
+        await Order.updateOne(
+            { razorpayOrderId: razorpay_order_id },
+            { 
+                $set: { 
+                    paymentStatus: "Paid", 
+                    deliveryStatus: "In Transit"
+                } 
+            }
+        );
+
+        // Deduct stock for purchased products
         await Promise.all(
-            tempOrder.products.map(async (product) => {
-                const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
+            order.products.map(async (product) => {
                 await Product.updateOne(
                     { name: product.productName, size: product.size },
                     { $inc: { stock: -product.quantity, orderCount: 1 } }
                 );
             })
         );
-        await Cart.updateOne({ userId: tempOrder.userId }, { $set: { products: [] } });
-        delete req.session.tempOrder;
+
+        // Clear the user's cart
+        await Cart.updateOne({ userId: order.userId }, { $set: { products: [] } });
+
         res.render('user/home', {
             message: "Order was placed successfully",
             user: await User.findOne({ email: req.session.email }),
@@ -1249,6 +1265,9 @@ const verifyPayment = async (req, res) => {
         res.status(500).send("Payment verification failed. Please contact support.");
     }
 };
+
+
+
 
 const returnProduct = async (req, res) => {
     // Handles product returns by updating the return status and reason in the order.
@@ -1370,10 +1389,141 @@ const wishlistRemove = async (req, res) => {
     }
 }
 
+const retryPayment = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+
+        let order = await Order.findOne({ orderId });
+
+        if (!order) {
+            return res.status(404).send("Order not found.");
+        }
+
+        if (order.paymentStatus !== "Pending" || order.paymentMethod !== "Online Payment") {
+            return res.status(400).send("This order is not eligible for retry.");
+        }
+
+        const options = {
+            amount: order.orderAmount * 100, 
+            currency: "INR",
+            receipt: order._id.toString(),
+            payment_capture: 1, 
+        };
+
+      
+        const razorpayOrder = await razorpay.orders.create(options);
+
+        await Order.updateOne(
+            { orderId },
+            { $set: { razorpayOrderId: razorpayOrder.id } }
+        );
+
+       
+        res.render("user/payment", {
+            orderId: razorpayOrder.id,
+            amount: razorpayOrder.amount, 
+            key: process.env.RAZORPAY_KEY_ID,
+            user: req.user, 
+            hideFooter: true,
+        });
+    } catch (error) {
+        console.error("Error while retrying payment:", error);
+        res.status(500).send("Something went wrong while retrying payment.");
+    }
+};
+
+const downloadInvoice = async (req, res) => {
+    try {
+        let orderId = req.params.id;
+        
+      
+        const order = await Order.findOne({orderId});
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        let userId = order.userId
+        let user = await User.findOne({userId})
+
+        const doc = new PDFDocument({ margin: 50 });
+        const filePath = path.join(__dirname, `invoice_${orderId}.pdf`);
+        const stream = fs.createWriteStream(filePath);
+        
+        doc.pipe(stream);
+
+        // **Header Section**
+        doc.fontSize(24).fillColor('#333').text('Invoice', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).fillColor('#666').text('Company Name: ,MULTI SHOP', { align: 'center' });
+        doc.moveDown(2);
+
+        // **Customer & Order Details**
+        doc.fontSize(14).fillColor('#000').text('Order Details', { underline: true });
+        doc.moveDown();
+        doc.fontSize(12);
+        doc.text(`Order ID: ${order._id}`);
+        doc.text(`Customer Name: ${user.name}`);
+        doc.text(`Email: ${user.email}`);
+        doc.text(`Phone: ${user.phone}`);
+        doc.text(`Shipping Address: ${order.address.line1}, ${order.address.city}, ${order.address.state}, ${order.address.country} - ${order.address.zipCode}`);
+        doc.moveDown();
+
+        // **Product Table Header**
+        doc.fontSize(14).fillColor('#000').text('Products', { underline: true });
+        doc.moveDown();
+        doc.fontSize(12).fillColor('#444');
+        
+        doc.text('-----------------------------------------------------------');
+        doc.text(`Item         | Size   | Quantity  | Price (₹)`);
+        doc.text('-----------------------------------------------------------');
+
+        // **Product List in Table Format**
+        order.products.forEach((product, index) => {
+            doc.text(
+                `${index + 1}. ${product.productName} | ${product.size} | ${product.quantity} | ₹${product.price}`,
+                { indent: 10 }
+            );
+        });
+
+        doc.text('-----------------------------------------------------------');
+        doc.moveDown(2);
+
+        // **Payment & Delivery Details**
+        doc.fontSize(14).fillColor('#000').text('Payment Details', { underline: true });
+        doc.moveDown();
+        doc.fontSize(12).fillColor('#444');
+        doc.text(`Total Amount: ₹${order.orderAmount}`, { bold: true });
+        doc.text(`Payment Method: ${order.paymentMethod}`);
+        doc.text(`Payment Status: ${order.paymentStatus}`);
+        doc.text(`Delivery Status: ${order.deliveryStatus}`);
+        doc.moveDown(2);
+
+        // **Thank You Note**
+        doc.fontSize(14).fillColor('#000').text('Thank you for shopping with us!', { align: 'center' });
+        doc.fontSize(12).fillColor('#555').text('For any queries, contact support@yourstore.com', { align: 'center' });
+
+        doc.end();
+
+        stream.on('finish', () => {
+            res.download(filePath, `invoice_${orderId}.pdf`, (err) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).json({ message: 'Error downloading invoice' });
+                }
+                fs.unlinkSync(filePath); 
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+
 module.exports = {
     registerUser, loadRegister, verifyOtp, loadOtpPage, loadLogin, loginUser, loadHome, loadforgotPassword, sendResetMail,
     logoutUser, loadProductDetails, googleAuth, googleCallback, loadCategory, resendOtp, loadResetPassword, resetPassword, loadProducts,
     loadProfile, loadEditProfile, postAddress, postProfile, loadEditAddress, postEditedAddress, loadCart, addToCart, deleteProduct,
     loadCheckout, placeOrder, sortAndFilter, cancelOrder, loadOrders, orderDetails, verifyPayment, returnProduct, searchItem, addToWishlist,
-    loadWishlist, wishlistRemove
+    loadWishlist, wishlistRemove, retryPayment, downloadInvoice
 }

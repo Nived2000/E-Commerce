@@ -351,14 +351,14 @@ const listOrders = async (req, res) => {
         const orders = await Order.find({})
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);     
+            .limit(limit);
 
         const totalPages = Math.ceil(totalOrders / limit);
         for (let product of orders) {
             let userId = product.userId;
             let user = await User.findOne({ userId });
             let userEmail = user ? user.email : ''; // Ensure user exists before accessing email
-            
+
             // Add userEmail to the product object
             product.userEmail = userEmail;
         }
@@ -388,7 +388,7 @@ const deliveryMark = async (req, res) => {
         let userId = product.userId;
         let user = await User.findOne({ userId });
         let userEmail = user ? user.email : ''; // Ensure user exists before accessing email
-        
+
         // Add userEmail to the product object
         product.userEmail = userEmail;
     }
@@ -404,7 +404,7 @@ const notdeliveredMark = async (req, res) => {
         let userId = product.userId;
         let user = await User.findOne({ userId });
         let userEmail = user ? user.email : ''; // Ensure user exists before accessing email
-        
+
         // Add userEmail to the product object
         product.userEmail = userEmail;
     }
@@ -506,21 +506,21 @@ const loadReturns = async (req, res) => {
                 createdAt: 1
             }
         },
-        {$sort: {createdAt: -1}}
+        { $sort: { createdAt: -1 } }
     ]);
 
-    
+
 
     // Iterate over each return to fetch user details and add userEmail to the return object
     for (let product of returns) {
         let userId = product.userId;
         let user = await User.findOne({ userId });
         let userEmail = user ? user.email : ''; // Ensure user exists before accessing email
-        
+
         // Add userEmail to the product object
         product.userEmail = userEmail;
     }
-    
+
     res.render('admin/listReturns', { returns, hideHeader: true, hideFooter: true })
 }
 
@@ -615,8 +615,95 @@ const postDiscount = async (req, res) => {
 
 const loadSales = async (req, res) => {
     // Fetches and renders sales data based on the specified date range or filter
-    let startDate = req.query.startDate;
-    let endDate = req.query.endDate;
+    let startDate = req.query.startDate || "2025-01-20";
+    let endDate = req.query.endDate || "2025-01-31";
+    let chartFilter = req.query.chartFilter || "daily";
+
+    var data = [];
+    var labels = []
+
+    if (chartFilter === "daily") {
+        let today = new Date();
+        let startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+
+        for (let day = startDate; day <= today; day.setDate(day.getDate() + 1)) {
+            let orderCount = await Order.find({
+                createdAt: {
+                    $gte: day.setHours(0, 0, 0, 0),
+                    $lt: new Date(day).setHours(23, 59, 59, 999)
+                }
+            }).countDocuments();
+
+
+            data.push(orderCount);
+            labels.push(day.toLocaleDateString());
+        }
+
+    } else if (chartFilter === "weekly") {
+        let today = new Date();
+        let startDate = new Date(today);
+        startDate.setDate(today.getDate() - 56); // 8 weeks back
+
+        let week = 1; // Initialize week counter
+
+        for (let weekStart = new Date(startDate); weekStart <= today; weekStart.setDate(weekStart.getDate() + 7)) {
+            let weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            let orderCount = await Order.find({
+                createdAt: {
+                    $gte: weekStart.setHours(0, 0, 0, 0),
+                    $lt: weekEnd.setHours(23, 59, 59, 999)
+                }
+            }).countDocuments();
+
+            data.push(orderCount);
+            labels.push(`Week ${week}`);  // Add the week number (e.g., "Week 1", "Week 2")
+
+            week++;  // Increment the week counter
+        }
+    }
+
+
+    // Monthly filter (Last 6 months)
+    else if (chartFilter === "monthly") {
+        let today = new Date();
+        let startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 5); // Last 6 months
+
+        for (let monthStart = new Date(startDate); monthStart <= today; monthStart.setMonth(monthStart.getMonth() + 1)) {
+            let monthEnd = new Date(monthStart);
+            monthEnd.setMonth(monthEnd.getMonth() + 1);
+            monthEnd.setDate(0); // Last day of the month
+
+            let orderCount = await Order.find({
+                createdAt: {
+                    $gte: monthStart.setHours(0, 0, 0, 0),
+                    $lt: monthEnd.setHours(23, 59, 59, 999)
+                }
+            }).countDocuments();
+
+            data.push(orderCount);
+            labels.push(`${monthStart.toLocaleString('default', { month: 'long' })} ${monthStart.getFullYear()}`);
+        }
+    }
+
+    let topProducts = await Product.find({}).sort({ orderCount: -1 }).limit(7)
+    
+
+    let topCategory = new Set();
+    let topBrands = new Set();
+
+    for (let x of topProducts) {
+        topCategory.add(x.category);
+        topBrands.add(x.brand);
+    }
+
+    let topCategoryArray = Array.from(topCategory);
+    let topBrandsArray = Array.from(topBrands);
+    console.log(topProducts, topBrandsArray, topCategoryArray);
+
 
     let filter = req.query.filter;
 
@@ -658,7 +745,7 @@ const loadSales = async (req, res) => {
                     $gte: new Date(startDate),
                     $lte: new Date(endDate),
                 }
-            });
+            }).sort({ createdAt: -1 });
 
             let totalSales = 0;
             let totalRevenue = 0;
@@ -679,6 +766,7 @@ const loadSales = async (req, res) => {
 
             const totalDiscount = totalSales - totalRevenue;
 
+
             return res.render('admin/salesReport', {
                 hideHeader: true,
                 hideFooter: true,
@@ -686,20 +774,31 @@ const loadSales = async (req, res) => {
                 totalOrders,
                 totalSales,
                 totalRevenue,
-                orders
+                orders,
+                startDate,
+                endDate,
+                data: JSON.stringify(data), // Pass the data array as a JSON string
+                labels: JSON.stringify(labels),
+                topBrandsArray,
+                topCategoryArray,
+                topProducts
             });
         } catch (error) {
             console.error('Error fetching orders:', error);
             return res.status(500).send('Error generating sales report');
         }
     }
-
+    // If no data, render with a message
     res.render('admin/salesReport', {
         hideHeader: true,
         hideFooter: true,
-        message: "Enter a date range"
+        message: "Enter a date range",
+        topBrandsArray,
+        topCategoryArray,
+        topProducts
     });
 };
+
 
 
 const downloadReport = async (req, res) => {

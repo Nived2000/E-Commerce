@@ -70,7 +70,7 @@
         <tbody>
             {{#each coupons}}
     <tr>
-        <th scope="row">{{@index}}</th>
+        <th scope="row">{{increment @index}}</th>
         <td>{{this._id}}</td>
         <td>{{this.couponName}}</td>
         <td>{{this.availableAfter}}</td>

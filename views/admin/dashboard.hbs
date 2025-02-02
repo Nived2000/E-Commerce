@@ -20,19 +20,24 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products" style="color: #ffc800;">Products</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products"
+            style="color: #ffc800;">Products</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard" style="color: #ffc800;">Users</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard"
+            style="color: #ffc800;">Users</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category" style="color: #ffc800;">Category</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category"
+            style="color: #ffc800;">Category</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order" style="color: #ffc800;">Orders</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order"
+            style="color: #ffc800;">Orders</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout" style="color: #ffc800;">Logout</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout"
+            style="color: #ffc800;">Logout</a>
         </li>
       </ul>
     </div>
@@ -78,16 +83,18 @@
       <tbody>
         {{#each users}}
         <tr class="{{#if @odd}}table-light{{else}}table-secondary{{/if}}">
-          <th scope="row">{{@index}}</th>
+          <th scope="row">{{increment @index}}</th>
           <td>{{this.name}}</td>
           <td>{{this.email}}</td>
-          <td>{{this.createdAt}}</td>
+          <td>{{formatDate this.createdAt}}</td>
           <td>{{#if this.isBlocked}}Access Blocked{{else}}Access Allowed{{/if}}</td>
           <td>
             {{#if this.isBlocked}}
-            <button class="btn btn-sm btn-outline-success" onclick="confirmUnblockUser('{{this.userId}}')">Unblock</button>
+            <button class="btn btn-sm btn-outline-success"
+              onclick="confirmUnblockUser('{{this.userId}}')">Unblock</button>
             {{else}}
-            <button class="btn btn-sm btn-outline-danger" onclick="confirmBlockUser('{{this.userId}}')">Block User</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="confirmBlockUser('{{this.userId}}')">Block
+              User</button>
             {{/if}}
           </td>
         </tr>

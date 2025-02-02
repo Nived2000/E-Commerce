@@ -15,6 +15,7 @@
                         <th>Number of Products</th>
                         <th>Payment Method</th>
                         <th>Total Amount</th>
+                        <th>Payment Status</th>
                         <th>Coupon Discount</th>
                         <th>Wallet Used</th>
                         <th>Delivery Status</th>
@@ -30,12 +31,26 @@
                         <td class="text-center">{{this.products.length}}</td>
                         <td class="text-center">{{this.paymentMethod}}</td>
                         <td class="text-center">{{this.orderAmount}} ₹</td>
+
+                        <td class="text-center">
+                            {{#if (eq this.paymentStatus "Pending")}}
+                            Pending
+                            {{#if (eq this.paymentMethod "Online Payment")}}
+                            <br>
+                             <a href="/user/retry-payment/{{this.orderId}}" class="btn btn-success mt-1">Retry Payment</a>
+                            {{/if}}
+                            {{else}}
+                            Paid
+                            {{/if}}
+                        </td>
+
+
                         <td class="text-center">{{this.couponDiscount}} ₹</td>
                         <td class="text-center">{{this.walletAmount}} ₹</td>
                         <td class="text-center">
                             <span class=" 
-                {{#if (eq this.deliveryStatus " In Transit")}}{{else if (eq
-                                this.deliveryStatus "Order Cancelled" )}}{{else}} {{/if}}">
+                {{#if (eq this.deliveryStatus " In Transit")}}{{else if (eq this.deliveryStatus "Order Cancelled"
+                                )}}{{else}} {{/if}}">
                                 {{#if (eq this.deliveryStatus "Order Cancelled")}}
                                 Order Cancelled
                                 {{else}}
@@ -46,10 +61,11 @@
                         {{#switch this.deliveryStatus}}
                         {{#case "In Transit"}}
                         <td class="text-center">
-    <a href="/user/delete-order/{{this._id}}" class="cancel-order-btn d-inline-flex justify-content-center">
-        <button class="btn text-white btn-sm">Cancel Order</button>
-    </a>
-</td>
+                            <a href="/user/delete-order/{{this._id}}"
+                                class="cancel-order-btn d-inline-flex justify-content-center">
+                                <button class="btn text-white btn-sm">Cancel Order</button>
+                            </a>
+                        </td>
 
                         {{/case}}
                         {{#case "Order Cancelled"}}
@@ -66,12 +82,13 @@
                         {{/default}}
                         {{/switch}}
                         <td>
-    <a href="/user/order-details/{{this.orderId}}">
-        <button class="btn btn-warning btn-sm d-inline-flex align-items-center px-3 py-2 rounded-3 shadow-sm view-details-btn">
-            <i class="bi bi-eye me-1"></i> View Details
-        </button>
-    </a>
-</td>
+                            <a href="/user/order-details/{{this.orderId}}">
+                                <button
+                                    class="btn btn-warning btn-sm d-inline-flex align-items-center px-3 py-2 rounded-3 shadow-sm view-details-btn">
+                                    <i class="bi bi-eye me-1"></i> View Details
+                                </button>
+                            </a>
+                        </td>
 
                     </tr>
                     {{/each}}
@@ -80,24 +97,27 @@
                 </tbody>
             </table>
         </div>
-    <div class="pagination-container">
-    {{#if previousPage}}
-        <a href="/user/orders?page={{previousPage}}&limit={{limit}}" class="btn btn-sm btn-outline-primary pagination-btn">Previous</a>
-    {{/if}}
-    
-    <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
+        <div class="pagination-container">
+            {{#if previousPage}}
+            <a href="/user/orders?page={{previousPage}}&limit={{limit}}"
+                class="btn btn-sm btn-outline-primary pagination-btn">Previous</a>
+            {{/if}}
 
-    {{#if nextPage}}
-        <a href="/user/orders?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-outline-primary pagination-btn">Next</a>
-    {{/if}}
+            <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
 
-    <!-- Add option to go to the next page directly -->
-    {{#if nextPage}}
-        <a href="/user/orders?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-outline-warning pagination-btn">Go to Next Page</a>
-    {{/if}}
-</div>
+            {{#if nextPage}}
+            <a href="/user/orders?page={{nextPage}}&limit={{limit}}"
+                class="btn btn-sm btn-outline-primary pagination-btn">Next</a>
+            {{/if}}
 
-        
+            <!-- Add option to go to the next page directly -->
+            {{#if nextPage}}
+            <a href="/user/orders?page={{nextPage}}&limit={{limit}}"
+                class="btn btn-sm btn-outline-warning pagination-btn">Go to Next Page</a>
+            {{/if}}
+        </div>
+
+
 
         <input type="hidden" value="{{message}}" id="message">
     </div>

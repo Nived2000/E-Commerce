@@ -1,11 +1,18 @@
-<form id="razorpay-form" action="/user/verify-payment" method="POST">
+<div class="payment-container">
+    <h2>Processing Your Payment...</h2>
+    <p>Please do not refresh or close this page.</p>
+    <p>{{orderId}}</p>
+
+    <form id="razorpay-form" action="/user/verify-payment" method="POST">
         <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
         <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="{{orderId}}">
         <input type="hidden" name="razorpay_signature" id="razorpay_signature">
     </form>
+</div>
 
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    function openRazorpay() {
         const options = {
             key: "{{key}}",
             amount: "{{amount}}",
@@ -22,47 +29,62 @@
             theme: {
                 color: "#3399cc",
             },
+            modal: {
+                escape: false, // Prevents accidental closing with ESC
+                backdropclose: false, // Prevents closing on backdrop click
+                ondismiss: function () {
+                    // Razorpay was closed, show only the "Go to Home" button
+                    document.getElementById("home-container").style.display = "block";
+                }
+            }
         };
 
         const rzp = new Razorpay(options);
         rzp.open();
-    </script>
-    <div class="center-container">
+    }
+
+    // Open Razorpay when the page loads
+    openRazorpay();
+</script>
+
+<div id="home-container" class="center-container" style="display: none;">
     <a href="/user/home" class="btn-home">Go to Home Page</a>
 </div>
 
-    
+<style>
+    .payment-container {
+        text-align: center;
+        padding: 20px;
+    }
 
-    <style>
-        .center-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; /* Full viewport height */
-    background-color: #f8f9fa; /* Optional background color */
-}
+    .center-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f8f9fa;
+    }
 
+    .btn-home {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 15px 30px;
+        background-color: #3399cc;
+        color: white;
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 25px;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
 
-        .btn-home {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 15px 30px;
-            background-color: #3399cc;
-            color: white;
-            text-decoration: none;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 25px;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
+    .btn-home:hover {
+        background-color: #287ba0;
+        transform: translateY(-3px);
+    }
 
-        .btn-home:hover {
-            background-color: #287ba0;
-            transform: translateY(-3px);
-        }
-
-        .btn-home:active {
-            transform: translateY(2px);
-        }
-    </style>
+    .btn-home:active {
+        transform: translateY(2px);
+    }
+</style>

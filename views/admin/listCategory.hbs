@@ -65,7 +65,7 @@
     <tbody>
       {{#each categories}}
       <tr>
-        <th scope="row">{{@index }}</th>
+        <th scope="row">{{increment @index }}</th>
         <td>{{this.category}}</td>
         <td>{{this.products.length}}</td>
         <td>{{this.categoryDiscount}}</td>
