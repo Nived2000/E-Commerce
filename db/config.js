@@ -7,7 +7,9 @@ const uri = process.env.MONGO_URI; // Fetch from environment variable
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(uri);
+        await mongoose.connect(uri, {
+            serverSelectionTimeoutMS: 5000
+        });
         console.log("eCommerceDB connected!");
     } catch (error) {
         console.error("MongoDB connection error:", error);
