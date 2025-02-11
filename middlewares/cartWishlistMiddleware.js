@@ -7,7 +7,10 @@ const cartWishlistMiddleware = async (req, res, next) => {
     try {
         const email = req.session.email; // Ensure the user is logged in
         const user = await User.findOne({email})
-        const userId = user.userId
+        if(user){
+            var userId = user.userId
+        }
+        
         if (!userId) {
             res.locals.cartCount = 0;
             res.locals.wishlistCount = 0;
