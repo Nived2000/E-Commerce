@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -12,7 +13,7 @@ const adminRouter = require('./routes/admin');
 const rateLimit = require('express-rate-limit');
 const cartWishlistMiddleware = require('./middlewares/cartWishlistMiddleware')
 
-require('dotenv').config();
+
 require('./passport');
 
 const app = express();
@@ -158,6 +159,10 @@ app.set('views', path.join(__dirname, 'views'));
 // Routes
 app.use('/user',cartWishlistMiddleware, userRouter);
 app.use('/admin', adminRouter);
+
+app.get('/', (req, res) => {
+  res.redirect('/user/login'); // Adjust this based on your routes
+});
 
 // Start the server
 const PORT = process.env.PORT || 3001;

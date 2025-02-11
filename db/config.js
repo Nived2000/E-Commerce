@@ -2,16 +2,16 @@
 const mongoose = require('mongoose');
 
 // MongoDB URI (replace with your database name)
-const uri = "mongodb+srv://nivedgeethak:HI42mHZghpNBd5p4@e-commerce-cluster.fr1az.mongodb.net/eCommerceDB"
+const uri = process.env.MONGO_URI; // Fetch from environment variable
 
-// Function to connect to MongoDB
+
 const connectDB = async () => {
     try {
         await mongoose.connect(uri);
         console.log("eCommerceDB connected!");
     } catch (error) {
         console.error("MongoDB connection error:", error);
-        process.exit(1);  // Exit the process with failure
+        process.exit(1);
     }
 };
 
