@@ -11,7 +11,6 @@
         </a>
     </div>
 
-
     <table class="table table-light table-borderless table-hover text-center mb-0">
         <thead class="thead-dark">
             <tr>
@@ -26,28 +25,29 @@
             <tr>
                 <td class="align-middle">
                     <div class="d-flex align-items-center">
-                        <img src="/img/{{this.image}}" alt=""
-                            style="width: 60px; height: 70px; object-fit: cover; margin-right: 35px;">
+                        <img src="/img/{{this.image}}" alt="" style="width: 60px; height: 70px; object-fit: cover; margin-right: 35px;">
                         <span><b>{{this.productName}} ({{this.size}})</b></span>
                     </div>
                 </td>
-                <td class="align-middle">{{this.price}} ₹</td>
+                <td class="align-middle product-price" data-price="{{this.price}}">
+                    {{this.price}} ₹
+                </td>
                 <td class="align-middle">
                     <div class="input-group">
                         <button class="btn btn-sm btn-primary btn-decrement" data-id="{{this._id}}">-</button>
                         <span class="mx-2 quantity-text">1</span>
-                        <button class="btn btn-sm btn-primary btn-increment" data-id="{{this._id}}"
-                            data-stock="{{this.stockAvailable}}">+</button>
+                        <button class="btn btn-sm btn-primary btn-increment" data-id="{{this._id}}" data-stock="{{this.stockAvailable}}">+</button>
                     </div>
                 </td>
                 <td class="align-middle">
                     <button class="btn btn-sm btn-success btn-move-to-cart" data-id="{{this._id}}">
                         <i class="fas fa-cart-plus"></i> Move to Cart
                     </button>
-                    <a href="/user/remove-from-wishlist/{{this._id}}"><button class="btn btn-sm btn-danger btn-remove"
-                            data-id="{{this._id}}">
+                    <a href="/user/remove-from-wishlist/{{this._id}}">
+                        <button class="btn btn-sm btn-danger btn-remove" data-id="{{this._id}}">
                             <i class="fa fa-times"></i>
-                        </button></a>
+                        </button>
+                    </a>
                 </td>
             </tr>
             {{/each}}
@@ -63,7 +63,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-
+    // Show message on page load if exists
     const message = document.getElementById('message').value;
     if (message) {
         Swal.fire({
@@ -72,17 +72,18 @@
         });
     }
 
-
     // Increment button logic
     document.querySelectorAll(".btn-increment").forEach(function (button) {
         button.addEventListener("click", function () {
             const quantityElement = this.parentElement.querySelector(".quantity-text");
             let currentQuantity = parseInt(quantityElement.innerText.trim()) || 0;
             const availableStock = parseInt(this.getAttribute("data-stock")) || 0;
+            const priceElement = this.closest("tr").querySelector(".product-price");
 
             if (currentQuantity < availableStock) {
-                quantityElement.innerText = currentQuantity + 1;
-
+                currentQuantity += 1;
+                quantityElement.innerText = currentQuantity;
+                updatePrice(priceElement, currentQuantity); // Update the price dynamically
             } else {
                 Swal.fire("Maximum stock reached!", "", "error");
             }
@@ -94,38 +95,15 @@
         button.addEventListener("click", function () {
             const quantityElement = this.parentElement.querySelector(".quantity-text");
             let currentQuantity = parseInt(quantityElement.innerText.trim()) || 0;
+            const priceElement = this.closest("tr").querySelector(".product-price");
 
             if (currentQuantity > 1) {
-                quantityElement.innerText = currentQuantity - 1;
+                currentQuantity -= 1;
+                quantityElement.innerText = currentQuantity;
+                updatePrice(priceElement, currentQuantity); // Update the price dynamically
             } else {
                 Swal.fire("Minimum quantity is 1!", "", "error");
             }
-        });
-    });
-
-
-    // Move to Cart button logic
-    document.querySelectorAll(".btn-move-to-cart").forEach(function (button) {
-        button.addEventListener("click", function () {
-            const productId = this.getAttribute("data-id");
-
-            Swal.fire({
-                title: "Move to Cart?",
-                text: "Do you want to add this item to your cart?",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, move it!",
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire("Moved!", "The product has been added to your cart.", "success");
-
-                    // Optionally send an AJAX request to move the item to the cart
-                    // $.post(`/user/move-to-cart`, { id: productId });
-
-                    // Remove the item from the wishlist UI
-                    this.closest("tr").remove();
-                }
-            });
         });
     });
 
@@ -143,7 +121,7 @@
                 text: "Do you want to add this item to your cart?",
                 icon: "question",
                 showCancelButton: true,
-                confirmButtonText: "Yes, move it!",
+                confirmButtonText: "Yes, move it!"
             }).then((result) => {
                 if (result.isConfirmed) {
                     const redirectUrl = `/user/addToCart?productName=${encodeURIComponent(productName)}&productSize=${encodeURIComponent(selectedSize)}&productQuantity=${encodeURIComponent(productQuantity)}&wishlist=yes`;
@@ -153,4 +131,10 @@
         });
     });
 
+    // Function to update the price based on quantity
+    function updatePrice(priceElement, quantity) {
+        const pricePerUnit = parseFloat(priceElement.getAttribute("data-price")); // Get the price per unit
+        const newPrice = (pricePerUnit * quantity).toFixed(0); // Calculate the total price
+        priceElement.innerText = `${newPrice} ₹`; // Update the price in the table
+    }
 </script>

@@ -46,7 +46,7 @@
         </ul>
     </div>
 
-    <!-- Sort By -->
+
     <!-- Sort By -->
 <div class="dropdown">
     <button class="btn btn-primary font-weight-bold dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown"
@@ -92,6 +92,7 @@
 
     <!-- Apply Button -->
     <button class="btn btn-success font-weight-bold apply-filters">Apply</button>
+    <button class="btn btn-secondary font-weight-bold clear-filters">Clear Filter</button>
 </div>
 
     </div>
@@ -173,7 +174,10 @@
     // Variables to track selected filters and sort options
     let selectedCategories = [];
     let selectedSortOption = '';
-
+    document.querySelector('.clear-filters').addEventListener('click', function() {
+        document.querySelectorAll('.sort-radio').forEach(radio => radio.checked = false)
+        selectedCategories = [];
+    });
     // Update selected categories when checkboxes are toggled
     document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', () => {

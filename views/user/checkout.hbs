@@ -73,7 +73,7 @@
                         </div>
                         <div class="form-group col-md-6">
                             <label>ZIP Code</label>
-                            <input class="form-control" type="text" name="zipCode" required>
+                            <input class="form-control" type="number" name="zipCode" required>
                         </div>
                     </div>
                 </div>
@@ -195,14 +195,14 @@
                         <span class="bg-secondary pr-3">Payment</span>
                     </h5>
                     <div class="bg-light p-30">
-                        <div class="form-group">
+                        <div class="form-group" id="form-group">
                             <div class="custom-control custom-radio">
                                 <input type="radio" class="custom-control-input" name="paymentMethod"
                                     value="Online Payment" id="paypal" required>
                                 <label class="custom-control-label" for="paypal">Razorpay</label>
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="form-group">
                             <div class="custom-control custom-radio">
                                 <input type="radio" class="custom-control-input" name="paymentMethod"
                                     value="Cash on Delivery" id="directcheck" required>
@@ -243,208 +243,239 @@
 <!-- JavaScript -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const couponInput = document.getElementById('couponInput');
-        const discountAmountEl = document.getElementById('discountAmount');
-        const updatedGrandTotalEl = document.getElementById('updatedGrandTotal');
-        const walletUsageInput = document.getElementById('walletUsage');
-        const afterWalletDiscountEl = document.getElementById('afterWalletDiscount');
-        const walletBalanceEl = document.getElementById('walletBalance');
-        const grandTotalInput = document.querySelector('input[name="grandTotal"]');
-        const form = document.querySelector('form[action="/user/place-order"]');
-        const useWalletButton = document.getElementById('useWalletButton');
-        const applyCouponButton = document.getElementById('applyCouponButton');
-        const removeCouponButton = document.getElementById('removeCouponButton');
+    const couponInput = document.getElementById('couponInput');
+    const discountAmountEl = document.getElementById('discountAmount');
+    const updatedGrandTotalEl = document.getElementById('updatedGrandTotal');
+    const walletUsageInput = document.getElementById('walletUsage');
+    const afterWalletDiscountEl = document.getElementById('afterWalletDiscount');
+    const walletBalanceEl = document.getElementById('walletBalance');
+    const grandTotalInput = document.querySelector('input[name="grandTotal"]');
+    const form = document.querySelector('form[action="/user/place-order"]');
+    const useWalletButton = document.getElementById('useWalletButton');
+    const applyCouponButton = document.getElementById('applyCouponButton');
+    const removeCouponButton = document.getElementById('removeCouponButton');
 
-        // Address inputs
-        const line1Input = document.querySelector('input[name="line1"]');
-        const cityInput = document.querySelector('input[name="city"]');
-        const stateInput = document.querySelector('input[name="state"]');
-        const countryInput = document.querySelector('input[name="country"]');
-        const zipCodeInput = document.querySelector('input[name="zipCode"]');
+    // Address inputs
+    const line1Input = document.querySelector('input[name="line1"]');
+    const cityInput = document.querySelector('input[name="city"]');
+    const stateInput = document.querySelector('input[name="state"]');
+    const countryInput = document.querySelector('input[name="country"]');
+    const zipCodeInput = document.querySelector('input[name="zipCode"]');
 
-        // Remove Coupon Functionality
-        removeCouponButton.addEventListener('click', () => {
-            couponInput.value = ''; // Clear the input field
-        });
-        let originalGrandTotal = parseFloat(grandTotalInput.value);
-        let walletBalance = parseFloat(walletBalanceEl.textContent.replace('₹', '').trim());
-        let appliedCouponDiscount = 0;
+    // Remove Coupon Functionality
+    removeCouponButton.addEventListener('click', () => {
+        couponInput.value = ''; // Clear the input field
+        appliedCouponDiscount = 0
+        updateTotals()
+    });
 
-        // Coupon data dynamically rendered from the server
-        const coupons = document.querySelectorAll('#availableCoupons li');
+    let originalGrandTotal = parseFloat(grandTotalInput.value);
+    let walletBalance = parseFloat(walletBalanceEl.textContent.replace('₹', '').trim());
+    let appliedCouponDiscount = 0;
 
-        const couponData = Array.from(coupons).map(coupon => ({
-            couponId: coupon.getAttribute('data-coupon-id'),
-            couponName: coupon.getAttribute('data-coupon-name'),
-            availableAfter: parseInt(coupon.getAttribute('data-available-after'), 10),
-            discountAmount: coupon.getAttribute('data-discount') ? parseInt(coupon.getAttribute('data-discount'), 10) : null,
-            discountPercentage: coupon.getAttribute('data-percentage') ? parseInt(coupon.getAttribute('data-percentage'), 10) : null,
-        }));
+    // Coupon data dynamically rendered from the server
+    const coupons = document.querySelectorAll('#availableCoupons li');
 
-        // Apply Coupon Button Logic with Validation
-        applyCouponButton.addEventListener('click', (event) => {
-            event.preventDefault();
-            const couponCode = couponInput.value.trim();
+    const couponData = Array.from(coupons).map(coupon => ({
+        couponId: coupon.getAttribute('data-coupon-id'),
+        couponName: coupon.getAttribute('data-coupon-name'),
+        availableAfter: parseInt(coupon.getAttribute('data-available-after'), 10),
+        discountAmount: coupon.getAttribute('data-discount') ? parseInt(coupon.getAttribute('data-discount'), 10) : null,
+        discountPercentage: coupon.getAttribute('data-percentage') ? parseInt(coupon.getAttribute('data-percentage'), 10) : null,
+    }));
 
-            if (!couponCode) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Empty Coupon Code',
-                    text: 'Please enter a valid coupon code.',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
+    // Apply Coupon Button Logic with Validation
+    applyCouponButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        const couponCode = couponInput.value.trim();
 
-            const coupon = couponData.find((c) => c.couponName.toUpperCase() === couponCode.toUpperCase());
-
-            if (coupon && originalGrandTotal >= coupon.availableAfter) {
-                let discount = 0;
-                if (coupon.discountAmount) {
-                    discount = coupon.discountAmount;
-                    console.log(discount)
-                } else if (coupon.discountPercentage) {
-
-                    discount = Math.ceil((originalGrandTotal * coupon.discountPercentage) / 100);
-                }
-                appliedCouponDiscount = discount;
-                updateTotals();
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Coupon Applied',
-                    text: `Coupon "${couponCode}" applied successfully! Discount of ₹${discount.toFixed(2)} applied.`,
-                    confirmButtonText: 'OK',
-                });
-
-            } else if (!coupon) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid Coupon',
-                    text: 'The entered coupon code is not valid.',
-                    confirmButtonText: 'Try Again',
-                }).then(() => {
-                    couponInput.value = ''; // Clear the input field
-                });
-            } else {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Coupon Not Applicable',
-                    text: `This coupon requires a minimum total of ₹${coupon.availableAfter}.`,
-                    confirmButtonText: 'OK',
-                });
-            }
-        });
-
-        // Update Totals
-        const updateTotals = () => {
-            const walletDiscount = parseFloat(walletUsageInput.value) || 0;
-
-            if (walletDiscount > originalGrandTotal || walletDiscount > walletBalance) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Invalid Wallet Usage',
-                    text: 'The wallet amount cannot exceed the cart total or your wallet balance.',
-                    confirmButtonText: 'OK',
-                }).then(() => {
-                    walletUsageInput.value = Math.min(walletBalance, originalGrandTotal);
-                    updateTotals();
-                });
-                return;
-            }
-            else if (walletDiscount < 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Invalid Wallet Usage',
-                    text: 'The wallet amount should be more than 0',
-                    confirmButtonText: 'OK',
-                }).then(() => {
-                    walletUsageInput.value = 0;
-                    updateTotals();
-                });
-                return;
-            }
-
-            let newGrandTotal = originalGrandTotal - appliedCouponDiscount - walletDiscount;
-            newGrandTotal = Math.max(newGrandTotal, 0);
-
-            discountAmountEl.textContent = `${appliedCouponDiscount} ₹`;
-            afterWalletDiscountEl.textContent = `${newGrandTotal} ₹`;
-            updatedGrandTotalEl.textContent = `${newGrandTotal} ₹`;
-            grandTotalInput.value = newGrandTotal;
-        };
-
-        // Wallet Usage Event
-        useWalletButton.addEventListener('click', (event) => {
-            event.preventDefault();
-            updateTotals();
-        });
-
-        // ZIP Code Validation
-        const isValidZipCode = (zip) => /^[0-9]{5,6}$/.test(zip);
-
-        // Form Submission Logic with Address Validation
-        form.addEventListener('submit', (event) => {
-            event.preventDefault(); // Prevent form submission if validation fails
-
-            const couponCode = couponInput.value.trim() || "NONE";
-            const zipCode = zipCodeInput.value.trim();
-            const paymentMethod = document.querySelector('input[type="radio"]:checked')
-            const grandTotal = parseInt(grandTotalInput.value, 10); // Using base 10 for decimal number parsing
-
-            if (paymentMethod.value === "Cash on Delivery" && grandTotal >= 1000) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Order Cannot be placed',
-                    text: 'Cash on Delivery is only applicable for orders below 1000',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
-            if (!isValidZipCode(zipCode)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid ZIP Code',
-                    text: 'Please enter a valid 5 or 6-digit ZIP code.',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
-
-            if (!line1Input.value.trim() || !cityInput.value.trim() || !stateInput.value.trim() || !countryInput.value.trim()) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Incomplete Address',
-                    text: 'Please select or enter a valid address.',
-                    confirmButtonText: 'OK',
-                });
-                return;
-            }
-
-            const baseAction = form.getAttribute('action');
-            form.setAttribute(
-                'action',
-                `${baseAction}?couponCode=${encodeURIComponent(couponCode)}&walletUsage=${encodeURIComponent(walletUsageInput.value)}`
-            );
-            form.submit();
-        });
-
-        // Address Selection Event
-        document.querySelectorAll('.address-card').forEach((card) => {
-            card.addEventListener('click', function () {
-                const cardText = this.querySelector('.card-text').innerText;
-                const lines = cardText.split('\n').map((line) => line.trim());
-                const line1 = lines[0] || '';
-                const [city, state, country] = (lines[1]?.split(',') || []).map((item) => item.trim());
-                const zipCode = (lines[2]?.split(':')[1] || '').trim();
-
-                line1Input.value = line1;
-                cityInput.value = city || '';
-                stateInput.value = state || '';
-                countryInput.value = country || '';
-                zipCodeInput.value = zipCode || '';
+        if (!couponCode) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Empty Coupon Code',
+                text: 'Please enter a valid coupon code.',
+                confirmButtonText: 'OK',
             });
+            return;
+        }
+
+        const coupon = couponData.find((c) => c.couponName.toUpperCase() === couponCode.toUpperCase());
+
+        if (coupon && originalGrandTotal >= coupon.availableAfter) {
+            let discount = 0;
+            if (coupon.discountAmount) {
+                discount = coupon.discountAmount;
+            } else if (coupon.discountPercentage) {
+                discount = Math.ceil((originalGrandTotal * coupon.discountPercentage) / 100);
+            }
+            appliedCouponDiscount = discount;
+            updateTotals();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Coupon Applied',
+                text: `Coupon "${couponCode}" applied successfully! Discount of ₹${discount.toFixed(2)} applied.`,
+                confirmButtonText: 'OK',
+            });
+
+        } else if (!coupon) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Coupon',
+                text: 'The entered coupon code is not valid.',
+                confirmButtonText: 'Try Again',
+            }).then(() => {
+                couponInput.value = ''; // Clear the input field
+            });
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Coupon Not Applicable',
+                text: `This coupon requires a minimum total of ₹${coupon.availableAfter}.`,
+                confirmButtonText: 'OK',
+            });
+        }
+    });
+
+    // Update Totals
+    const updateTotals = () => {
+        const walletDiscount = parseFloat(walletUsageInput.value) || 0;
+
+        if (walletDiscount > originalGrandTotal || walletDiscount > walletBalance) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid Wallet Usage',
+                text: 'The wallet amount cannot exceed the cart total or your wallet balance.',
+                confirmButtonText: 'OK',
+            }).then(() => {
+                walletUsageInput.value = Math.min(walletBalance, originalGrandTotal);
+                updateTotals();
+            });
+            return;
+        }
+        else if (walletDiscount < 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid Wallet Usage',
+                text: 'The wallet amount should be more than 0',
+                confirmButtonText: 'OK',
+            }).then(() => {
+                walletUsageInput.value = 0;
+                updateTotals();
+            });
+            return;
+        }
+
+        let newGrandTotal = originalGrandTotal - appliedCouponDiscount - walletDiscount;
+        newGrandTotal = Math.max(newGrandTotal, 0);
+
+        discountAmountEl.textContent = `${appliedCouponDiscount} ₹`;
+        afterWalletDiscountEl.textContent = `${newGrandTotal} ₹`;
+        updatedGrandTotalEl.textContent = `${newGrandTotal} ₹`;
+        grandTotalInput.value = newGrandTotal;
+    };
+
+    // Wallet Usage Event
+    useWalletButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    updateTotals();
+
+    if (grandTotalInput.value == 0) {
+        // Hide the payment method radio buttons
+        document.querySelectorAll('#form-group').forEach(group => {
+            group.style.display = 'none';
+        });
+
+        // Remove 'required' attribute to allow order placement
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(input => {
+            input.required = false;
+        });
+    } else {
+        // Show the payment method radio buttons
+        document.querySelectorAll('#form-group').forEach(group => {
+            group.style.display = 'block';
+        });
+
+        // Re-add 'required' attribute when grandTotal is not 0
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(input => {
+            input.required = true;
+        });
+    }
+});
+
+
+    // ZIP Code Validation
+    const isValidZipCode = (zip) => /^[0-9]{5,6}$/.test(zip);
+
+    // Form Submission Logic with Address Validation
+    form.addEventListener('submit', (event) => {
+        event.preventDefault(); // Prevent form submission if validation fails
+
+        const couponCode = couponInput.value.trim() || "NONE";
+        const zipCode = zipCodeInput.value.trim();
+        if(document.querySelector('input[type="radio"]:checked')){
+            var paymentMethod = document.querySelector('input[type="radio"]:checked');
+        }else{
+            var paymentMethod = "NONE"
+        }
+        
+        const grandTotal = parseInt(grandTotalInput.value, 10);
+
+        if (paymentMethod.value === "Cash on Delivery" && grandTotal >= 1000) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Order Cannot be placed',
+                text: 'Cash on Delivery is only applicable for orders below 1000',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
+        if (!isValidZipCode(zipCode)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid ZIP Code',
+                text: 'Please enter a valid 5 or 6-digit ZIP code.',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
+        if (!line1Input.value.trim() || !cityInput.value.trim() || !stateInput.value.trim() || !countryInput.value.trim() || !zipCodeInput.value.trim()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Incomplete Address',
+                text: 'Please fill in all required address fields.',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
+        const baseAction = form.getAttribute('action');
+        form.setAttribute(
+            'action',
+            `${baseAction}?couponCode=${encodeURIComponent(couponCode)}&walletUsage=${encodeURIComponent(walletUsageInput.value)}`
+        );
+        form.submit();
+    });
+
+    // Address Selection Event
+    document.querySelectorAll('.address-card').forEach((card) => {
+        card.addEventListener('click', function () {
+            const cardText = this.querySelector('.card-text').innerText;
+            const lines = cardText.split('\n').map((line) => line.trim());
+            const line1 = lines[0] || '';
+            const [city, state, country] = (lines[1]?.split(',') || []).map((item) => item.trim());
+            const zipCode = (lines[2]?.split(':')[1] || '').trim();
+
+            line1Input.value = line1;
+            cityInput.value = city || '';
+            stateInput.value = state || '';
+            countryInput.value = country || '';
+            zipCodeInput.value = zipCode || '';
         });
     });
+});
+
 
 </script>

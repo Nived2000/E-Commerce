@@ -82,11 +82,17 @@
                         <h5 id="grandTotal"></h5>
                         {{/if}}
                     </div>
+                    
+    
                     <form id="checkoutForm" action="/user/checkout" method="POST">
                         <input type="hidden" name="updatedQuantities" id="updatedQuantities" value="">
+                        {{#if hideDelivery}}
+                        {{else}}
                         <button type="submit" class="btn btn-block btn-primary font-weight-bold my-3 py-3">Proceed To
                             Checkout</button>
+                            {{/if}}
                     </form>
+                
 
                 </div>
             </div>
@@ -158,7 +164,7 @@
                 } else {
                     // Disable the increment button if stock is reached
                     Swal.fire("Maximum stock reached!");
-                    this.disabled = true;
+                    
                 }
             });
         });

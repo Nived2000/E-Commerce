@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 // MongoDB URI (replace with your database name)
-const uri = "mongodb://localhost:27017/eCommerceDB"; // Replace 'testDB' with your database name
+const uri = "mongodb+srv://nivedgeethak:HI42mHZghpNBd5p4@e-commerce-cluster.fr1az.mongodb.net/eCommerceDB"
 
 // Function to connect to MongoDB
 const connectDB = async () => {

@@ -52,4 +52,7 @@ router.get('/downloadReport/:format', adminController.downloadReport);
 router.get('/loadCoupons', auth.checkSessionAdmin, adminController.loadCoupons)
 router.get('/remove-coupon/:id', auth.checkSessionAdmin, adminController.removeCoupon)
 
+router.get('/banner', auth.checkSessionAdmin, adminController.loadAddBanner)
+router.post('/addBanner', auth.checkSessionAdmin, upload.uploadSingle, adminController.addBanner)
+
 module.exports = router;

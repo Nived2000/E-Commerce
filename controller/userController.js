@@ -11,6 +11,7 @@ const Wallet = require('../model/walletModel');
 const Coupon = require('../model/couponModel');
 const Wishlist = require('../model/wishlistModel');
 const Transaction = require('../model/transactionModel');
+const Banner = require('../model/bannerModel')
 const nodemailer = require('nodemailer');
 const saltRounds = 10;
 const passport = require('passport');
@@ -211,6 +212,7 @@ const loginUser = async (req, res) => {
     let products = await Product.find({ isListed: true });
     let categories = await Category.find();
     let discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
+    let banners = await Banner.find({})
 
     if (!user) {
         res.render('user/login', {
@@ -248,6 +250,7 @@ const loginUser = async (req, res) => {
             user,
             categories,
             discountedCategories,
+            banners
         });
     }
 };
@@ -263,8 +266,9 @@ const googleCallback = async (req, res) => {
         const products = await Product.find({ isListed: true });
         const categories = await Category.find();
         let discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
+        let banners = await Banner.find({})
 
-        res.render('user/home', { products, email: req.session.email, user, categories, discountedCategories });
+        res.render('user/home', { products, email: req.session.email, user, categories, discountedCategories, banners });
     } catch (error) {
         console.error("Error during Google callback: ", error);
         res.render('user/login', { message2: "Google login failed. Please try again.", hideHeader: true, hideFooter: true });
@@ -295,13 +299,14 @@ const loadHome = async (req, res) => {
     let products = await Product.find({ isListed: true });
     let categories = await Category.find();
     let discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
+    let banners = await Banner.find({})
 
     res.render('user/home', {
         products,
         email: req.session.email,
         user,
         categories,
-        discountedCategories
+        discountedCategories, banners
     });
 };
 
@@ -887,6 +892,7 @@ const loadCheckout = async (req, res) => {
 const placeOrder = async (req, res) => {
     try {
         const { name, email, phone, line1, city, state, country, zipCode, paymentMethod } = req.body;
+        console.log(paymentMethod)
         if (!req.session.email) return res.status(401).send("Unauthorized access. Please log in.");
 
         const user = await User.findOne({ email: req.session.email });
@@ -923,10 +929,63 @@ const placeOrder = async (req, res) => {
             }
         }
 
+        var discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
+        var banners = await Banner.find({})
 
         const orderAmount = filteredProducts.reduce((total, product) => total + product.price * product.quantity, 100) - couponDiscount - walletAmount;
-        
-        if (paymentMethod === "Cash on Delivery") {
+        if (!paymentMethod) {
+            const order = new Order({
+                userId: user.userId,
+                address: { name, phone, email, line1, state, city, country, zipCode },
+                products: filteredProducts,
+                paymentMethod: "Wallet",
+                orderAmount,
+                paymentStatus: "Paid",
+                walletAmount,
+                couponDiscount
+            });
+
+            await order.save();
+
+            
+            for (const product of filteredProducts) {
+                const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
+                if (currentProduct) {
+                    const newStock = currentProduct.stock - product.quantity;
+                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item` });
+
+                    await Product.updateOne({ name: product.productName, size: product.size }, { $set: { stock: newStock } });
+                }
+            }
+
+            if (walletAmount > 0) {
+                await Wallet.updateOne({ userId: user.userId }, { $inc: { amountAvailable: -walletAmount } });
+
+                let transactionExist = await Transaction.findOne({ userId: user.userId });
+                if (!transactionExist) {
+                    let newTransaction = new Transaction({
+                        userId: user.userId,
+                        transactions: [{ amount: walletAmount, type: "debit", createdAt: new Date() }],
+                    });
+                    await newTransaction.save();
+                } else {
+                    await Transaction.updateOne(
+                        { userId: user.userId },
+                        { $push: { transactions: { amount: walletAmount, type: "debit", createdAt: new Date() } } }
+                    );
+                }
+            }
+
+            await Cart.deleteOne({ userId: user.userId });
+
+            return res.render("user/home", {
+                message: "Your order has been placed successfully!",
+                user,
+                hideFooter: true,
+                discountedCategories,
+                banners
+            });
+        }else if (paymentMethod === "Cash on Delivery") {
             const order = new Order({
                 userId: user.userId,
                 address: { name, phone, email, line1, state, city, country, zipCode },
@@ -1075,7 +1134,7 @@ const cancelOrder = async (req, res) => {
         let refundAmount;
         const walletAmount = currOrders.walletAmount;
 
-        if (currOrders.paymentMethod === "Online Payment") {
+        if (currOrders.paymentMethod === "Online Payment" || currOrders.paymentMethod  === "Wallet") {
             refundAmount = currOrders.orderAmount - 100 + walletAmount;
         } else if (currOrders.paymentMethod === "Cash on Delivery") {
             refundAmount = walletAmount;
@@ -1242,9 +1301,32 @@ const verifyPayment = async (req, res) => {
             }
         );
 
+        let walletAmount = order.walletAmount 
+        let userId = order.userId
+
+        if (walletAmount > 0) {
+            await Wallet.updateOne({ userId }, { $inc: { amountAvailable: -walletAmount } });
+
+            let transactionExist = await Transaction.findOne({ userId });
+            if (!transactionExist) {
+                let newTransaction = new Transaction({
+                    userId,
+                    transactions: [{ amount: walletAmount, type: "debit", createdAt: new Date() }],
+                });
+                await newTransaction.save();
+            } else {
+                await Transaction.updateOne(
+                    { userId},
+                    { $push: { transactions: { amount: walletAmount, type: "debit", createdAt: new Date() } } }
+                );
+            }
+        }
+
+
         // Deduct stock for purchased products
         await Promise.all(
             order.products.map(async (product) => {
+
                 await Product.updateOne(
                     { name: product.productName, size: product.size },
                     { $inc: { stock: -product.quantity, orderCount: 1 } }

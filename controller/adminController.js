@@ -8,6 +8,7 @@ const Order = require('../model/orderModel');
 const Coupon = require('../model/couponModel');
 const { log } = require('handlebars');
 const Wallet = require('../model/walletModel');
+const Banner = require('../model/bannerModel')
 const Transaction = require('../model/transactionModel');
 const PDFDocument = require('pdfkit'); // For PDF generation
 const excelJS = require('exceljs'); // For Excel generation
@@ -702,7 +703,6 @@ const loadSales = async (req, res) => {
 
     let topCategoryArray = Array.from(topCategory);
     let topBrandsArray = Array.from(topBrands);
-    console.log(topProducts, topBrandsArray, topCategoryArray);
 
 
     let filter = req.query.filter;
@@ -994,9 +994,32 @@ const removeCoupon = async (req, res) => {
     }
 };
 
+const loadAddBanner = async(req, res)=>{
+    res.render('admin/addBanner', {hideFooter: true, hideHeader: true})
+}
+
+const addBanner = async(req, res)=>{
+    let { name, description } = req.body;
+    
+    let bannerExist = await Banner.findOne({ name });
+    const imagePath = req.file ? req.file.filename : null;
+    if (bannerExist) {
+        return res.render('admin/addBanner', {message: "Banner already exist", hideFooter: true, hideHeader: true})
+    }else{
+        let newBanner = new Banner({
+            name,
+            description,
+            image: imagePath
+        })
+
+        await newBanner.save()
+        res.render('admin/addBanner', { message: "Banner added successfully", hideFooter: true, hideHeader: true })
+    }
+}
+
 module.exports = {
     loadLogin, loginAdmin, loadDashboard, blockUser, unblockUser, loadProducts, loadAddProducts, addProduct,
     unlistProduct, listProduct, loadEditProduct, editProduct, logoutAdmin, loadAddCategory, loadCategory, addCategory,
     loadCategoryManagement, postProductToCategory, deleteCategory, listOrders, deliveryMark, notdeliveredMark, adminCancel, loadAddCoupon,
-    postCoupon, loadReturns, markReturn, loadEditCategory, postDiscount, loadSales, downloadReport, loadCoupons, removeCoupon
+    postCoupon, loadReturns, markReturn, loadEditCategory, postDiscount, loadSales, downloadReport, loadCoupons, removeCoupon, addBanner,loadAddBanner
 }

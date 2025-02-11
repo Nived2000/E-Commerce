@@ -1,9 +1,21 @@
 const User = require('../model/userModel');
 
 // Middleware to check user session
-const checkSession = (req, res, next) => {
-    if (req.session?.user) { // Ensure `req.session` exists
-        next();
+const checkSession = async (req, res, next) => {
+    if (req.session?.user) {
+        try {
+            let user = await User.findOne({ email: req.session.email });
+            if (user) {
+                next();
+            } else {
+                req.session.destroy(() => {
+                    res.redirect('/user/login');
+                });
+            }
+        } catch (error) {
+            console.error("Error checking user session:", error);
+            res.redirect('/user/login');
+        }
     } else {
         res.redirect('/user/login');
     }
@@ -27,14 +39,25 @@ const isLoginAdmin = (req, res, next) => {
     }
 };
 
-// Middleware to check admin session
-const checkSessionAdmin = (req, res, next) => {
+// Middleware to check admin session and verify from DB
+const checkSessionAdmin = async (req, res, next) => {
     if (req.session?.admin) {
-        next();
+        try {
+            let admin = await User.findOne({ email: req.session.AdminEmail, isAdmin: true });
+            if (admin) {
+                next();
+            } else {
+                req.session.destroy(() => {
+                    res.redirect('/admin/login');
+                });
+            }
+        } catch (error) {
+            console.error("Error checking admin session:", error);
+            res.redirect('/admin/login');
+        }
     } else {
         res.redirect('/admin/login');
     }
 };
 
-
-module.exports = {checkSession, isLogin, checkSessionAdmin, isLoginAdmin}
+module.exports = { checkSession, isLogin, checkSessionAdmin, isLoginAdmin };

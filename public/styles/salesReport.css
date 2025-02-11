@@ -80,7 +80,7 @@ ul li::before {
 
 /* Optional: Change the bullet to an icon or other styles */
 ul li::before {
-  background-color: #75b8a4; /* Custom bullet color */
+  background-color: #333b40; /* Custom bullet color */
   width: 10px;
   height: 10px;
   border-radius: 50%; /* Circle bullet */
