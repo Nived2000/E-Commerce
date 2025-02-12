@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const uri = process.env.MONGO_URI
+const uri = "mongodb://127.0.0.1:27017/ecommerceDB"
 
 const connectDB = async () => {
     try {
