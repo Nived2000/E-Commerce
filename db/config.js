@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const uri = "mongodb://127.0.0.1:27017/ecommerceDB"
+const uri = "mongodb://127.0.0.1:27017/eCommerceDB"
 
 const connectDB = async () => {
     try {
