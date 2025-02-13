@@ -330,6 +330,10 @@ const loadProductDetails = async (req, res) => {
     let discountedPrice = product.price - ((discount / 100) * product.price);
     discountedPrice = Math.floor(discountedPrice);
 
+    var discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
+    var banners = await Banner.find({})
+
+
     let allProducts = await Product.find({ name: product.name });
 
     if (!category) {
@@ -342,7 +346,7 @@ const loadProductDetails = async (req, res) => {
     }
 
     if (!product.isListed) {
-        return res.redirect('/user/home');
+        return res.redirect('/user/home', {banners, discountedCategories,});
     }
 
     let categoryId = category.categoryId.toString();
@@ -952,7 +956,7 @@ const placeOrder = async (req, res) => {
                 const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
                 if (currentProduct) {
                     const newStock = currentProduct.stock - product.quantity;
-                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item` });
+                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item`, banners, discountedCategories });
 
                     await Product.updateOne({ name: product.productName, size: product.size }, { $set: { stock: newStock } });
                 }
@@ -1004,7 +1008,8 @@ const placeOrder = async (req, res) => {
                 const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
                 if (currentProduct) {
                     const newStock = currentProduct.stock - product.quantity;
-                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item` });
+                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item`, banners,discountedCategories
+                     });
 
                     await Product.updateOne({ name: product.productName, size: product.size }, { $set: { stock: newStock } });
                 }
@@ -1034,6 +1039,8 @@ const placeOrder = async (req, res) => {
                 message: "Your order has been placed successfully!",
                 user,
                 hideFooter: true,
+                banners,
+                discountedCategories
             });
         }else if (paymentMethod === "Online Payment") {
             const amountInPaise = Math.round(orderAmount * 100);
@@ -1066,6 +1073,7 @@ const placeOrder = async (req, res) => {
                 key: process.env.RAZORPAY_KEY_ID,
                 user,
                 hideFooter: true,
+
             });
         }
         
@@ -1271,6 +1279,10 @@ const orderDetails = async (req, res) => {
 
 const verifyPayment = async (req, res) => {
     try {
+
+        var discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
+        var banners = await Banner.find({})
+
         const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
 
         // Fetch the existing order with "Payment Pending" status
@@ -1341,6 +1353,9 @@ const verifyPayment = async (req, res) => {
             message: "Order was placed successfully",
             user: await User.findOne({ email: req.session.email }),
             categories: await Category.find({}),
+            banners, discountedCategories
+            
+            
         });
     } catch (error) {
         console.error("Error verifying payment:", error);
