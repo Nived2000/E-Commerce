@@ -1,7 +1,6 @@
 <div class="payment-container">
     <h2>Processing Your Payment...</h2>
     <p>Please do not refresh or close this page.</p>
-    <p>{{orderId}}</p>
 
     <form id="razorpay-form" action="/user/verify-payment" method="POST">
         <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">

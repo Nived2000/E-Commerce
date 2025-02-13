@@ -174,7 +174,8 @@ const verifyOtp = async (req, res) => {
 
         await newUser.save();
         return res.render('user/login', {
-            message: "User registered successfully!"
+            message: "User registered successfully!",hideHeader: true,
+            hideFooter: true
         });
     } else {
         return res.render('user/verifyOtp', {
