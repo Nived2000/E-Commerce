@@ -78,21 +78,46 @@
   </select>
 </div>
       <label for="images" class="text-white">Existing Images:</label>
-      {{#each product.images}}
+<div id="existingImagesContainer">
+  {{#each product.images}}
+    <div class="existing-image-wrapper" data-image="{{this}}">
       <img class="existing-images" src="/img/{{this}}" alt="">
-      {{/each}}
-      <div class="form-group mb-4">
-        <label for="images" class="text-white">Upload Images:</label>
-        <input type="file" id="images" name="images" multiple accept="image/*">
-      </div>
-      <div id="imagePreviewContainer" class="image-preview-container"></div>
-      <div class="d-grid gap-2">
-        <button type="submit" class="btn btn-warning">Edit Product</button>
-      </div>
+      <button type="button" class="remove-image-btn" onclick="removeImage('{{this}}')">X</button>
+    </div>
+  {{/each}}
+</div>
+
+<!-- Hidden Input to Store Images to Remove -->
+<input type="hidden" id="imagesToRemove" name="imagesToRemove" value="">
+
+<div class="form-group mb-4">
+  <label for="images" class="text-white">Upload Images:</label>
+  <input type="file" id="images" name="images" multiple accept="image/*">
+</div>
+
+<div id="imagePreviewContainer" class="image-preview-container"></div>
+
+<div class="d-grid gap-2">
+  <button type="submit" class="btn btn-warning">Edit Product</button>
+</div>
     </form>
   </div>
 
   <script>
+    let imagesToRemove = [];
+
+  function removeImage(imageName) {
+    // Store the image name to remove
+    imagesToRemove.push(imageName);
+    document.getElementById('imagesToRemove').value = imagesToRemove;
+
+    // Remove image from UI
+    const imageWrapper = document.querySelector(`.existing-image-wrapper[data-image="${imageName}"]`);
+    if (imageWrapper) {
+      imageWrapper.remove();
+    }
+  }
+
     document.querySelector('.product-form').addEventListener('submit', function (event) {
       const price = parseFloat(document.getElementById('price').value);
       const discount = parseFloat(document.getElementById('discount').value);

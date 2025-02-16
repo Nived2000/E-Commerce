@@ -1,0 +1,29 @@
+/* General Styles for Error Pages */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 5%;
+    background-color: #f5f5f5;
+  }
+  
+  h1 {
+    color: #ff4c4c;
+    font-size: 3rem;
+  }
+  
+  p {
+    font-size: 1.2rem;
+    color: #333;
+  }
+  
+  a {
+    text-decoration: none;
+    color: #007acc;
+    font-weight: bold;
+    font-size: 1rem;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  

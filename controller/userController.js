@@ -72,7 +72,7 @@ const registerUser = async (req, res) => {
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error("Error sending email: ", error);
-                return res.status(500).json({ message: 'Error sending OTP' });
+                return res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
             }
 
             res.render('user/verifyOtp', {
@@ -87,7 +87,7 @@ const registerUser = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error registering user' });
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -326,6 +326,9 @@ const loadProductDetails = async (req, res) => {
     let proId = req.params.id;
     let category = await Category.findOne({ products: { $in: [proId] } });
     let product = await Product.findOne({ productId: proId });
+    if (!product) {
+        return res.status(404).render('user/404', { message: 'Product not found', hideFooter: true, hideHeader:true });
+    }
     let stock = product.stock;
     let discount = product.discount || 0;
     let discountedPrice = product.price - ((discount / 100) * product.price);
@@ -342,9 +345,7 @@ const loadProductDetails = async (req, res) => {
         return;
     }
 
-    if (!product) {
-        return res.status(404).render('error', { message: 'Product not found' });
-    }
+    
 
     if (!product.isListed) {
         return res.redirect('/user/home', {banners, discountedCategories,});
@@ -354,7 +355,7 @@ const loadProductDetails = async (req, res) => {
     let categoryItems = await Category.findOne({ categoryId }, { products: 1, _id: 0 });
 
     if (!categoryItems || !categoryItems.products) {
-        return res.status(404).render('error', { message: 'No products found in the category' });
+        return res.status(404).render('user/404', { message: 'No products found in the category' ,hideFooter: true, hideHeader:true });
     }
 
     const ids = categoryItems.products.map(id => id.toString());
@@ -513,7 +514,7 @@ const loadProducts = async (req, res) => {
         });
     } catch (error) {
         console.error('Error loading products:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -645,7 +646,7 @@ const loadCart = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.session.email }).lean();
         if (!user) {
-            return res.status(404).send('User not found');
+            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
         }
 
         const cart = await Cart.findOne({ userId: user.userId }).lean();
@@ -687,7 +688,7 @@ const loadCart = async (req, res) => {
 
     } catch (error) {
         console.error("Error loading cart page:", error);
-        res.status(500).send("Internal Server Error");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -788,7 +789,7 @@ const addToCart = async (req, res) => {
         });
     } catch (error) {
         console.error("Error adding to cart:", error);
-        return res.status(500).send("An error occurred while adding the product to the cart.");
+        return res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -813,7 +814,7 @@ const loadCheckout = async (req, res) => {
     // Load the checkout page by fetching user, cart details, updating quantities, and applying filters/coupons
     try {
         const user = await User.findOne({ email: req.session.email }).lean();
-        if (!user) return res.status(404).send('User not found');
+        if (!user) return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
 
         const address = user.address || null;
         const updatedQuantities = JSON.parse(req.body.updatedQuantities);
@@ -890,7 +891,7 @@ const loadCheckout = async (req, res) => {
         });
     } catch (error) {
         console.error("Error loading checkout page:", error);
-        res.status(500).send("Internal Server Error");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -901,7 +902,7 @@ const placeOrder = async (req, res) => {
         if (!req.session.email) return res.status(401).send("Unauthorized access. Please log in.");
 
         const user = await User.findOne({ email: req.session.email });
-        if (!user) return res.status(404).send("User not found.");
+        if (!user) return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
 
         const cart = await Cart.findOne({ userId: user.userId });
         if (!cart || !cart.products || cart.products.length === 0) return res.status(400).send("Cart is empty.");
@@ -1081,7 +1082,7 @@ const placeOrder = async (req, res) => {
 
     } catch (error) {
         console.error("Error placing order:", error.message);
-        res.status(500).send("Error placing order. Please try again.");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1125,7 +1126,7 @@ const sortAndFilter = async (req, res) => {
         });
     } catch (error) {
         console.error('Error in sort and filter:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1137,7 +1138,7 @@ const cancelOrder = async (req, res) => {
         const currOrders = await Order.findOne({ _id });
 
         if (!currOrders) {
-            return res.status(404).send("Order not found.");
+            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
         }
 
         let refundAmount;
@@ -1215,7 +1216,7 @@ const cancelOrder = async (req, res) => {
         res.render('user/orders', { orders, message: "Order is cancelled" });
     } catch (error) {
         console.error("Error cancelling order:", error);
-        res.status(500).send("Something went wrong while cancelling the order.");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1224,7 +1225,7 @@ const loadOrders = async (req, res) => {
     try {
         let user = await User.findOne({ email: req.session.email });
         if (!user) {
-            return res.status(404).send("User not found.");
+            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
         }
 
         const page = parseInt(req.query.page) || 1;
@@ -1255,7 +1256,7 @@ const loadOrders = async (req, res) => {
         });
     } catch (error) {
         console.error("Error loading orders:", error);
-        res.status(500).send("An error occurred while loading orders.");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1265,7 +1266,7 @@ const orderDetails = async (req, res) => {
     let order = await Order.findOne({ orderId });
 
     if (!order) {
-        return res.status(404).send("Order not found");
+        return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
     }
 
     let products = order.products;
@@ -1360,7 +1361,7 @@ const verifyPayment = async (req, res) => {
         });
     } catch (error) {
         console.error("Error verifying payment:", error);
-        res.status(500).send("Payment verification failed. Please contact support.");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1388,7 +1389,7 @@ const searchItem = async (req, res) => {
         res.render('user/searchedProducts', { products, query });
     } catch (error) {
         console.error('Search error:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 }
 
@@ -1403,7 +1404,7 @@ const addToWishlist = async (req, res) => {
         let discount = product.discount
         let discountedPrice = Math.floor(product.price - (discount / 100) * product.price)
         if (!product) {
-            return res.status(404).send("Product not found");
+            return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
         }
         let sizesArray = await Product.find({ name: product.name }, { size: 1, _id: 0 });
         const sizes = sizesArray.map(item => item.size);
@@ -1430,7 +1431,7 @@ const addToWishlist = async (req, res) => {
         res.redirect(`/user/productDetail/${id}`);
     } catch (error) {
         console.error("Error adding to wishlist:", error);
-        res.status(500).send("An error occurred while adding to the wishlist.");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1446,7 +1447,7 @@ const loadWishlist = async (req, res) => {
         const user = await User.findOne({ email: req.session.email });
         const totalProducts = await Product.countDocuments({ isListed: true });
         if (!user) {
-            return res.status(404).send("User not found.");
+            return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
         }
         const wishlist = await Wishlist.findOne({ userId: user.userId });
         if (!wishlist) {
@@ -1469,7 +1470,7 @@ const loadWishlist = async (req, res) => {
         res.render('user/wishlist', { wishlistProducts });
     } catch (error) {
         console.error("Error loading wishlist:", error);
-        res.status(500).send("Internal Server Error");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1494,7 +1495,7 @@ const retryPayment = async (req, res) => {
         let order = await Order.findOne({ orderId });
 
         if (!order) {
-            return res.status(404).send("Order not found.");
+            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
         }
 
         if (order.paymentStatus !== "Pending" || order.paymentMethod !== "Online Payment") {
@@ -1526,7 +1527,7 @@ const retryPayment = async (req, res) => {
         });
     } catch (error) {
         console.error("Error while retrying payment:", error);
-        res.status(500).send("Something went wrong while retrying payment.");
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 
@@ -1537,7 +1538,7 @@ const downloadInvoice = async (req, res) => {
       
         const order = await Order.findOne({orderId});
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
         }
 
         let userId = order.userId
@@ -1606,14 +1607,14 @@ const downloadInvoice = async (req, res) => {
             res.download(filePath, `invoice_${orderId}.pdf`, (err) => {
                 if (err) {
                     console.error(err);
-                    res.status(500).json({ message: 'Error downloading invoice' });
+                    res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
                 }
                 fs.unlinkSync(filePath); 
             });
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
     }
 };
 

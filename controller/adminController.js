@@ -186,6 +186,9 @@ const listProduct = async (req, res) => {
 const loadEditProduct = async (req, res) => {
     let proID = req.params.id;
     let product = await Product.findOne({ productId: proID });
+    if(!product){
+        return res.status(404).render('user/404', {hideFooter: true, hideHeader:true ,admin:true})
+    }
     res.render('admin/editProduct', { product, hideHeader: true, hideFooter: true });
 };
 
@@ -193,12 +196,19 @@ const loadEditProduct = async (req, res) => {
 const editProduct = async (req, res) => {
     try {
         const proID = req.params.id;
-        const { name, description, price, brand, size, stock, discount, category } = req.body;
+        const { name, description, price, brand, size, stock, discount, category, imagesToRemove } = req.body;
         const images = req.files ? req.files.map(file => file.filename) : [];
-        let existingProduct = await Product.findOne({ productId: proID });
+        const imageArray = imagesToRemove.split(',')
+        var existingProduct = await Product.findOne({ productId: proID });
 
         if (!existingProduct) {
-            return res.status(404).send("Product not found");
+            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true, admin:true})
+        }
+        if (imageArray.length > 0) {
+            await Product.updateOne(
+                { productId: proID },
+                { $pull: { images: { $in: imageArray } } }
+            );
         }
 
         const changesMade =

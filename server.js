@@ -23,24 +23,24 @@ connectDB();
 app.use(nocache());
 app.use(morgan('tiny'));
 app.use(express.static('public'));
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data (form submissions)
-app.use(express.json()); // Parse JSON data
+app.use(express.urlencoded({ extended: true })); 
+app.use(express.json()); 
 
 // Session configuration
 
-const MongoStore = require('connect-mongo'); // For MongoDB session store
+const MongoStore = require('connect-mongo'); 
 
 app.use(
     session({
-        secret: 'your-secret-key', // Replace with a strong secret
+        secret: 'your-secret-key', 
         resave: false,
         saveUninitialized: false,
         store: MongoStore.create({
-            mongoUrl: 'mongodb://localhost:27017/eCommerceDB', // Replace with your DB URL
+            mongoUrl: 'mongodb://13.60.20.41:27017/eCommerceDB', 
         }),
         cookie: {
-            maxAge: 1000 * 60 * 60 * 24, // 1 day
-            httpOnly: true, // Prevents JavaScript access to cookies
+            maxAge: 1000 * 60 * 60 * 24,
+            httpOnly: true, 
         },
     })
 );
@@ -52,7 +52,9 @@ const noCache = (req, res, next) => {
   next();
 };
 
-app.use(noCache); // Apply to all routes or to specific routes that require it
+app.use(noCache); 
+
+
 
 // Passport initialization
 app.use(passport.initialize());
@@ -113,22 +115,22 @@ range: function (start, end) {
   for (let i = start; i <= end; i++) {
       result.push(i);
   }
-  return result; // return the array of numbers
+  return result; 
 },
 add: function (a, b) {
   return a + b;
 },hasPrevious: function (page, options) {
   if (page > 1) {
-      return options.fn(this); // If current page > 1, there's a previous page
+      return options.fn(this); 
   } else {
-      return options.inverse(this); // Otherwise, no previous page
+      return options.inverse(this);
   }
 },
 hasNext: function (page, totalPages, options) {
   if (page < totalPages) {
-      return options.fn(this); // If current page < totalPages, there's a next page
+      return options.fn(this); 
   } else {
-      return options.inverse(this); // Otherwise, no next page
+      return options.inverse(this); 
   }
 }
 
@@ -147,8 +149,8 @@ app.engine('hbs', exphbs.engine({
     allowProtoPropertiesByDefault: true,
   },
   helpers: {
-    ...helpers, // Include built-in helpers
-    ...customHelpers, // Include custom helpers
+    ...helpers, 
+    ...customHelpers, 
   },
 }));
 
@@ -161,7 +163,7 @@ app.use('/user',cartWishlistMiddleware, userRouter);
 app.use('/admin', adminRouter);
 
 app.get('/', (req, res) => {
-  res.redirect('/user/login'); // Adjust this based on your routes
+  res.redirect('/user/login'); 
 });
 
 // Start the server
@@ -169,4 +171,15 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
 
   console.log(`Server started`);
+});
+
+// 404 Error Handler (Page Not Found)
+app.use((req, res, next) => {
+  res.status(404).render('user/404');
+});
+
+// 500 Error Handler (Internal Server Error)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).render('user/500');
 });
