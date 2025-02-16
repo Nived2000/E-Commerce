@@ -1,14 +1,14 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('./model/userModel');  
+const User = require('./model/userModel');  // Import your User model
 
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "https://ecom-multi.shop/user/auth/google/callback",  
+  callbackURL: "https://ecom-multi.shop/user/auth/google/callback",  // Adjust if necessary
 }, async (token, tokenSecret, profile, done) => {
   try {
-
+    // Search for an existing user based on the Google profile's email
     const existingUser = await User.findOne({ email: profile.emails[0].value });
 
     if (existingUser) {
