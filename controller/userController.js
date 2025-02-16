@@ -259,6 +259,7 @@ const loginUser = async (req, res) => {
 // Handles Google OAuth callback and logs in the user
 const googleCallback = async (req, res) => {
     try {
+        
         const user = req.user;
 
         req.session.user = true;
