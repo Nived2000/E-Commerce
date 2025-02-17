@@ -22,15 +22,33 @@ const userSchema = new mongoose.Schema(
     isBlocked: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
+    referralCode: {type: String,  unique:true}
   },
   { timestamps: true }
 );
 
-// Middleware to update the updatedAt field
-userSchema.pre('save', function (next) {
+
+userSchema.pre('save', async function (next) {
   this.updatedAt = Date.now();
+
+  if (!this.referralCode) {
+    let code;
+    let isUnique = false;
+
+    while (!isUnique) {
+      code = Math.random().toString(36).substring(2, 10).toUpperCase(); // Random 8-character code
+      const existingUser = await mongoose.model('User').findOne({ referralCode: code });
+      if (!existingUser) {
+        isUnique = true;
+      }
+    }
+
+    this.referralCode = code;
+  }
+
   next();
 });
+
 
 const User = mongoose.model('User', userSchema);
 

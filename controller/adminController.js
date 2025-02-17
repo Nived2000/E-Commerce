@@ -22,6 +22,7 @@ const loadLogin = (req, res) => {
 
 // Handles admin login authentication
 const loginAdmin = async (req, res) => {
+    
     let { email, password } = req.body;
     let admin = await User.findOne({ email });
 

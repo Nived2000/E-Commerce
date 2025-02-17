@@ -1,7 +1,7 @@
-<!-- Topbar Start -->
+
 <div class="container-fluid">
     <div class="row align-items-center bg-light py-3 px-xl-5 d-none d-lg-flex">
-        <!-- Logo Section -->
+ 
         <div class="col-lg-4">
             <a href="" class="text-decoration-none">
                 <span class="h1 text-uppercase text-primary bg-dark px-2">Multi</span>
@@ -9,11 +9,16 @@
             </a>
         </div>
 
-        <!-- Search Bar Section -->
         <div class="col-lg-4 col-6 text-left">
             <form action="/user/search" method="GET">
                 <div class="input-group">
-                    <input type="text" class="form-control" name="q" placeholder="Search for products" required>
+                    <input type="text" class="form-control" name="q" placeholder="Search for products" required
+                        value="{{query}}">
+
+        
+                    <input type="hidden" name="category" value="{{categoryToPass}}">
+                    <input type="hidden" name="sort" value="{{sortToPass}}">
+
                     <div class="input-group-append">
                         <button type="submit" class="input-group-text bg-transparent text-primary">
                             <i class="fa fa-search"></i>
@@ -22,17 +27,16 @@
                 </div>
             </form>
 
-        </div>
 
-        <!-- Contact Section -->
+        </div>
         <div class="col-lg-4 col-6 text-right">
 
             <h5 class="m-0">{{user.name}}</h5>
+            <p></p>
         </div>
     </div>
 </div>
 
-<!-- Topbar End -->
 
 
 <!-- Navbar Start -->

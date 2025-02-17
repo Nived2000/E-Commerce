@@ -118,7 +118,20 @@
                         </div>
                         <button type="submit" class="btn btn-primary">Add Address</button>
                     </form>
+                    <div class="mb-3 p-3 rounded border mt-3" >
+                    <strong class="text-dark" style="font-size: 1.1em;">Your Referral Code:</strong>
+                    <div class="d-flex align-items-center">
+                        <input type="text" class="form-control mr-2" value="{{user.referralCode}}" readonly
+                            style="max-width: 200px; font-weight: bold;">
+                        <button class="btn btn-primary" onclick="copyReferralCode()">Copy</button>
+                    </div>
+                    <p class="mt-2" style="font-size: 0.9em; color: #495057;">
+                        Share your referral code with friends! You earn ₹50 for each successful referral, and your
+                        friend gets ₹100.
+                    </p>
                 </div>
+                </div>
+                
             </div>
         </div>
     </div>
@@ -135,7 +148,14 @@
             text: message
         });
     }
-
+    function copyReferralCode() {
+    const input = document.querySelector('input[value="{{user.referralCode}}"]');
+    navigator.clipboard.writeText(input.value).then(() => {
+        alert('Referral code copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy referral code: ', err);
+    });
+}
 
 </script>
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

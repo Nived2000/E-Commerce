@@ -60,7 +60,6 @@
         <thead>
             <tr>
                 <th scope="col">Sl. No</th>
-                <th scope="col">Coupon ID</th>
                 <th scope="col">Coupon Code</th>
                 <th scope="col">Available Above</th>
                 <th scope="col">Discount (Amount/Percentage)</th>
@@ -71,7 +70,6 @@
             {{#each coupons}}
     <tr>
         <th scope="row">{{increment @index}}</th>
-        <td>{{this._id}}</td>
         <td>{{this.couponName}}</td>
         <td>{{this.availableAfter}}</td>
         {{#if this.discountAmount}}

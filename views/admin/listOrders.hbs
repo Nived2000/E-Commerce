@@ -68,7 +68,7 @@
     <tr>
         <th scope="row">{{increment @index}}</th>
         <td>{{this.userEmail}}</td>
-        <td>{{this.orderId}}</td>
+        <td>{{randomId}}</td>
         <td>{{formatDate this.createdAt}}</td>
         <td>{{this.deliveryStatus}}</td>
         {{#switch this.deliveryStatus}}
@@ -77,11 +77,6 @@
                     <a href="/admin/mark-as-delivered/{{this.orderId}}" class="me-2">
                         <button class="btn btn-success btn-sm d-inline-flex align-items-center">
                             <i class="bi bi-check-circle me-1"></i> Mark as Delivered
-                        </button>
-                    </a>
-                    <a href="/admin/admin-order-cancel/{{this.orderId}}" class="me-2">
-                        <button class="btn btn-danger btn-sm d-inline-flex align-items-center">
-                            <i class="bi bi-x-circle me-1"></i> Cancel Order
                         </button>
                     </a>
                 </td>

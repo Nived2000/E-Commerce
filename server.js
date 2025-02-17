@@ -23,26 +23,26 @@ connectDB();
 app.use(nocache());
 app.use(morgan('tiny'));
 app.use(express.static('public'));
-app.use(express.urlencoded({ extended: true })); 
-app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Session configuration
 
-const MongoStore = require('connect-mongo'); 
+const MongoStore = require('connect-mongo');
 
 app.use(
-    session({
-        secret: 'your-secret-key', 
-        resave: false,
-        saveUninitialized: false,
-        store: MongoStore.create({
-            mongoUrl: 'mongodb://13.60.20.41:27017/eCommerceDB', 
-        }),
-        cookie: {
-            maxAge: 1000 * 60 * 60 * 24,
-            httpOnly: true, 
-        },
-    })
+  session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: 'mongodb://13.60.20.41:27017/eCommerceDB',
+    }),
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+    },
+  })
 );
 
 const noCache = (req, res, next) => {
@@ -52,7 +52,7 @@ const noCache = (req, res, next) => {
   next();
 };
 
-app.use(noCache); 
+app.use(noCache);
 
 
 
@@ -102,37 +102,41 @@ const customHelpers = {
   pagination: function (currentPage, totalPages, options) {
     let output = '';
     for (let page = 1; page <= totalPages; page++) {
-        if (page === currentPage) {
-            output += `<li class="page-item active"><a class="page-link" href="/user/products?page=${page}">${page}</a></li>`;
-        } else {
-            output += `<li class="page-item"><a class="page-link" href="/user/products?page=${page}">${page}</a></li>`;
-        }
+      if (page === currentPage) {
+        output += `<li class="page-item active"><a class="page-link" href="/user/products?page=${page}">${page}</a></li>`;
+      } else {
+        output += `<li class="page-item"><a class="page-link" href="/user/products?page=${page}">${page}</a></li>`;
+      }
     }
     return new Handlebars.SafeString(output);
-},
-range: function (start, end) {
-  let result = [];
-  for (let i = start; i <= end; i++) {
+  },
+
+  randomId: function () {
+    return Math.random().toString(36).substr(2, 9);  // Generate a random alphanumeric string
+  },
+  range: function (start, end) {
+    let result = [];
+    for (let i = start; i <= end; i++) {
       result.push(i);
-  }
-  return result; 
-},
-add: function (a, b) {
-  return a + b;
-},hasPrevious: function (page, options) {
-  if (page > 1) {
-      return options.fn(this); 
-  } else {
+    }
+    return result;
+  },
+  add: function (a, b) {
+    return a + b;
+  }, hasPrevious: function (page, options) {
+    if (page > 1) {
+      return options.fn(this);
+    } else {
       return options.inverse(this);
+    }
+  },
+  hasNext: function (page, totalPages, options) {
+    if (page < totalPages) {
+      return options.fn(this);
+    } else {
+      return options.inverse(this);
+    }
   }
-},
-hasNext: function (page, totalPages, options) {
-  if (page < totalPages) {
-      return options.fn(this); 
-  } else {
-      return options.inverse(this); 
-  }
-}
 
 
 };
@@ -149,8 +153,8 @@ app.engine('hbs', exphbs.engine({
     allowProtoPropertiesByDefault: true,
   },
   helpers: {
-    ...helpers, 
-    ...customHelpers, 
+    ...helpers,
+    ...customHelpers,
   },
 }));
 
@@ -159,17 +163,16 @@ app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Routes
-app.use('/user',cartWishlistMiddleware, userRouter);
+app.use('/user', cartWishlistMiddleware, userRouter);
 app.use('/admin', adminRouter);
 
 app.get('/', (req, res) => {
-  res.redirect('/user/login'); 
+  res.redirect('/user/login');
 });
 
 // Start the server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-
   console.log(`Server started`);
 });
 

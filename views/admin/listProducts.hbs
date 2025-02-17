@@ -21,19 +21,24 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products" style="color: #ffc800;">Products</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products"
+            style="color: #ffc800;">Products</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard" style="color: #ffc800;">Users</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard"
+            style="color: #ffc800;">Users</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category" style="color: #ffc800;">Category</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category"
+            style="color: #ffc800;">Category</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order" style="color: #ffc800;">Orders</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order"
+            style="color: #ffc800;">Orders</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout" style="color: #ffc800;">Logout</a>
+          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout"
+            style="color: #ffc800;">Logout</a>
         </li>
       </ul>
     </div>
@@ -42,15 +47,15 @@
 
 
 <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item">
-            <a class="text-dark ml-5 font-weight-semi-bold"
-                href="/user/category/{{category.categoryId}}">{{category.category}}</a>
-        </li>
-        <li class="breadcrumb-item active" aria-current="page">
-            {{product.name}}
-        </li>
-    </ol>
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a class="text-dark ml-5 font-weight-semi-bold"
+        href="/user/category/{{category.categoryId}}">{{category.category}}</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">
+      {{product.name}}
+    </li>
+  </ol>
 </nav>
 
 
@@ -68,13 +73,14 @@
   </div>
   <div class="d-flex flex-column align-items-center mt-4">
 
-  <a href="/admin/addProducts" class="btn btn-custom-yellow mt-0 mb-2">Add Products</a>
-</div>
+    <a href="/admin/addProducts" class="btn btn-custom-yellow mt-0 mb-2">Add Products</a>
+  </div>
   <table class="table table-bordered custom-table">
     <thead>
       <tr>
         <th scope="col">Sl. No</th>
         <th scope="col">Product Name</th>
+        <th scope="col">Images</th>
         <th scope="col">Description</th>
         <th scope="col">Brand</th>
         <th scope="col">Size</th>
@@ -88,6 +94,16 @@
       <tr>
         <th scope="row">{{increment @index }}</th>
         <td>{{this.name}}</td>
+        <td>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; width: 100px;">
+            {{#each this.images}}
+            <img src="/img/{{this}}" alt="Product Image"
+              style="width: 45px; height: 60px; object-fit: cover; border-radius: 5px;">
+            {{/each}}
+          </div>
+        </td>
+
+
         <td>{{this.description}}</td>
         <td>{{this.brand}}</td>
         <td>{{this.size}}</td>
@@ -96,20 +112,20 @@
 
         {{#if this.isListed}}
         <td class="d-flex justify-content-between align-items-center">
-  <a href="/admin/editProduct/{{this.productId}}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" 
-     data-bs-placement="top" title="Edit">
-    Edit Product
-  </a>
-  <button class="btn btn-sm btn-outline-danger ms-2" onclick="confirmUnlistProduct('{{this.productId}}')" 
-          data-bs-toggle="tooltip" data-bs-placement="top" title="Unlist Product">
-    Unlist Product
-  </button>
-</td>
+          <a href="/admin/editProduct/{{this.productId}}" class="btn btn-sm btn-outline-primary"
+            data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+            Edit Product
+          </a>
+          <button class="btn btn-sm btn-outline-danger ms-2" onclick="confirmUnlistProduct('{{this.productId}}')"
+            data-bs-toggle="tooltip" data-bs-placement="top" title="Unlist Product">
+            Unlist Product
+          </button>
+        </td>
 
         {{else}}
         <td class="d-flex justify-content-between align-items-center">
-          <a href="/admin/editProduct/{{this.productId}}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Edit">
+          <a href="/admin/editProduct/{{this.productId}}" class="btn btn-sm btn-outline-primary"
+            data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
             Edit Product
           </a>
           <button class="btn btn-sm btn-outline-success ms-2" onclick="confirmListproduct('{{this.productId}}')"
@@ -127,23 +143,24 @@
   <input id="message" value="{{message}}" type="hidden">
 </div>
 <div class="pagination-container mb-5">
-    {{#if previousPage}}
-        <a href="/admin/products?page={{previousPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Previous</a>
-    {{/if}}
-    
-    <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
+  {{#if previousPage}}
+  <a href="/admin/products?page={{previousPage}}&limit={{limit}}"
+    class="btn btn-sm btn-info pagination-btn">Previous</a>
+  {{/if}}
 
-    {{#if nextPage}}
-        <a href="/admin/products?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Next</a>
-    {{/if}}
+  <span class="pagination-info">Page {{page}} of {{totalPages}}</span>
 
-    <!-- Add option to go to the next page directly -->
-    {{#if nextPage}}
-        <a href="/admin/products?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-success pagination-btn">Go to Next Page</a>
-    {{/if}}
+  {{#if nextPage}}
+  <a href="/admin/products?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-info pagination-btn">Next</a>
+  {{/if}}
+
+ 
+  {{#if nextPage}}
+  <a href="/admin/products?page={{nextPage}}&limit={{limit}}" class="btn btn-sm btn-success pagination-btn">Go to Next
+    Page</a>
+  {{/if}}
 </div>
 
-<!-- Centered Admin Logout Section -->
 
 
 <script>

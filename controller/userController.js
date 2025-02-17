@@ -20,6 +20,7 @@ const Razorpay = require('razorpay');
 const PDFDocument = require('pdfkit'); // For PDF generation
 const path = require('path');
 const fs = require('fs');
+const { console } = require('inspector');
 
 // In-memory storage for OTP (for demonstration purposes)
 let otpStorage = {};
@@ -33,7 +34,8 @@ const razorpay = new Razorpay({
 // Handles user registration, including sending OTP for email verification
 const registerUser = async (req, res) => {
     try {
-        const { email, password, name, phone } = req.body;
+        const { email, password, name, phone, code } = req.body
+        
 
         const user = await User.findOne({ email });
         if (user) {
@@ -80,6 +82,7 @@ const registerUser = async (req, res) => {
                 password,
                 phone,
                 name,
+                code,
                 message: 'OTP sent successfully!',
                 hideHeader: true,
                 hideFooter: true
@@ -136,8 +139,8 @@ const resendOtp = async (req, res) => {
 
 // Verifies the OTP provided by the user and completes registration
 const verifyOtp = async (req, res) => {
-    const { email, password, phone, name, otp } = req.body;
-
+    const { email, password, phone, name, otp, code } = req.body; 
+    let referralCode = code
     const storedOtp = otpStorage[email];
 
     if (!storedOtp) {
@@ -157,7 +160,11 @@ const verifyOtp = async (req, res) => {
 
     if (currentTime - storedOtp.timestamp > otpExpiryTime) {
         delete otpStorage[email];
-        return res.render('user/register', { message: "OTP expired, Register user again", hideHeader: true, hideFooter: true });
+        return res.render('user/register', { 
+            message: "OTP expired, Register user again", 
+            hideHeader: true, 
+            hideFooter: true 
+        });
     }
 
     if (storedOtp.otp === otp) {
@@ -173,8 +180,74 @@ const verifyOtp = async (req, res) => {
         });
 
         await newUser.save();
+
+        if (referralCode) {
+            const referrer = await User.findOne({ referralCode });
+
+            if (referrer) {
+                const referralBonus = 100;
+
+                const referrerWallet = await Wallet.findOne({ userId: referrer.userId });
+                if (referrerWallet) {
+                    await Wallet.updateOne(
+                        { userId: referrer.userId },
+                        { $inc: { amountAvailable: (0.5 * referralBonus) } }
+                    );
+                } else {
+                    const newReferrerWallet = new Wallet({
+                        userId: referrer.userId,
+                        amountAvailable: (0.5 * referralBonus),
+                    });
+                    await newReferrerWallet.save();
+                }
+
+                await Transaction.updateOne(
+                    { userId: referrer.userId },
+                    { 
+                        $push: { 
+                            transactions: { 
+                                amount: (0.5 * referralBonus), 
+                                type: 'credit', 
+                                date: new Date() 
+                            } 
+                        } 
+                    },
+                    { upsert: true }
+                );
+
+                const referredWallet = await Wallet.findOne({ userId: newUser.userId });
+                if (referredWallet) {
+                    await Wallet.updateOne(
+                        { userId: newUser.userId },
+                        { $inc: { amountAvailable: referralBonus } }
+                    );
+                } else {
+                    const newReferredWallet = new Wallet({
+                        userId: newUser.userId,
+                        amountAvailable: referralBonus,
+                    });
+                    await newReferredWallet.save();
+                }
+
+                await Transaction.updateOne(
+                    { userId: newUser.userId },
+                    { 
+                        $push: { 
+                            transactions: { 
+                                amount: referralBonus, 
+                                type: 'credit', 
+                                date: new Date() 
+                            } 
+                        } 
+                    },
+                    { upsert: true }
+                );
+            }
+        }
+
         return res.render('user/login', {
-            message: "User registered successfully!",hideHeader: true,
+            message: "User registered successfully!",
+            hideHeader: true,
             hideFooter: true
         });
     } else {
@@ -189,6 +262,7 @@ const verifyOtp = async (req, res) => {
         });
     }
 };
+
 
 // Loads the user registration page
 const loadRegister = (req, res) => {
@@ -1092,6 +1166,8 @@ const placeOrder = async (req, res) => {
 const sortAndFilter = async (req, res) => {
     try {
         let { sort, category, page, limit } = req.query;
+        let sortToPass = sort
+        let categoryToPass = category
 
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 4;
@@ -1120,10 +1196,14 @@ const sortAndFilter = async (req, res) => {
 
         const totalProducts = await Product.countDocuments(filterStage);
 
+        
         res.render('user/listProducts', {
             products,
             currentPage: page,
             totalPages: Math.ceil(totalProducts / limit),
+            filterStage,
+            sortToPass,
+            categoryToPass
         });
     } catch (error) {
         console.error('Error in sort and filter:', error);
@@ -1381,18 +1461,52 @@ const returnProduct = async (req, res) => {
 }
 
 const searchItem = async (req, res) => {
-    // Searches for products based on the query parameter and renders the results.
+    // Searches for products based on the query parameter and incorporates category and sort
     try {
         const query = req.query.q;
+        const category = req.query.category; 
+        const sort = req.query.sort;  
+
+        let sortToPass = sort
+        let categoryToPass = category
+        
+        const filterStage = {};
+        if (category) {
+            filterStage.category = { $in: category.split(',') };
+        }
+
+        
+        let sortStage = {};
+        if (sort === 'price_asc') {
+            sortStage.price = 1;
+        } else if (sort === 'price_desc') {
+            sortStage.price = -1;
+        } else if (sort === 'newest') {
+            sortStage.createdAt = -1;
+        } else if (sort === 'popularity') {
+            sortStage.orderCount = -1;
+        }
+
+    
         const products = await Product.find({
-            name: { $regex: query, $options: 'i' }
+            name: { $regex: query, $options: 'i' }, 
+            ...filterStage,  
+        }).sort(sortStage);
+
+        res.render('user/searchedProducts', { 
+            products, 
+            query, 
+            category,
+            sort,
+            sortToPass,
+            categoryToPass
         });
-        res.render('user/searchedProducts', { products, query });
     } catch (error) {
         console.error('Search error:', error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', {hideFooter: true, hideHeader:true});
     }
-}
+};
+
 
 const addToWishlist = async (req, res) => {
     // Adds a product to the user's wishlist if it doesn't already exist.
@@ -1561,7 +1675,6 @@ const downloadInvoice = async (req, res) => {
         doc.fontSize(14).fillColor('#000').text('Order Details', { underline: true });
         doc.moveDown();
         doc.fontSize(12);
-        doc.text(`Order ID: ${order._id}`);
         doc.text(`Customer Name: ${user.name}`);
         doc.text(`Email: ${user.email}`);
         doc.text(`Phone: ${user.phone}`);

@@ -78,14 +78,17 @@
   </select>
 </div>
       <label for="images" class="text-white">Existing Images:</label>
-<div id="existingImagesContainer">
+<div id="existingImagesContainer" data-count="{{product.images.length}}">
   {{#each product.images}}
     <div class="existing-image-wrapper" data-image="{{this}}">
       <img class="existing-images" src="/img/{{this}}" alt="">
-      <button type="button" class="remove-image-btn" onclick="removeImage('{{this}}')">X</button>
+      {{#if (gt ../product.images.length 1)}}
+        <button type="button" class="remove-image-btn" onclick="removeImage('{{this}}')">X</button>
+      {{/if}}
     </div>
   {{/each}}
 </div>
+
 
 <!-- Hidden Input to Store Images to Remove -->
 <input type="hidden" id="imagesToRemove" name="imagesToRemove" value="">
@@ -105,8 +108,10 @@
 
   <script>
     let imagesToRemove = [];
+let existingImageCount = parseInt(document.getElementById('existingImagesContainer').dataset.count, 10);
 
-  function removeImage(imageName) {
+function removeImage(imageName) {
+  if (existingImageCount > 1) {
     // Store the image name to remove
     imagesToRemove.push(imageName);
     document.getElementById('imagesToRemove').value = imagesToRemove;
@@ -115,8 +120,22 @@
     const imageWrapper = document.querySelector(`.existing-image-wrapper[data-image="${imageName}"]`);
     if (imageWrapper) {
       imageWrapper.remove();
+      existingImageCount--;
+      toggleRemoveButtons();
     }
   }
+}
+
+function toggleRemoveButtons() {
+  const removeButtons = document.querySelectorAll('.remove-image-btn');
+  if (existingImageCount <= 1) {
+    removeButtons.forEach(button => button.style.display = 'none');
+  } else {
+    removeButtons.forEach(button => button.style.display = 'inline-block');
+  }
+}
+
+toggleRemoveButtons();
 
     document.querySelector('.product-form').addEventListener('submit', function (event) {
       const price = parseFloat(document.getElementById('price').value);

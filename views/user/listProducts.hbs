@@ -7,6 +7,7 @@
         <!-- Section Title -->
         <h2 class="section-title position-relative text-uppercase">
             <span class="bg-secondary pr-3">All Products</span>
+            
         </h2>
 
         <!-- Filters and Sort -->
@@ -139,7 +140,6 @@
 </div>
 
 
-
 </div>
 
 <!-- Pagination Controls -->
@@ -166,19 +166,27 @@
 </div>
 
 
-
+<input type="hidden" id="alreadySort" value="{{sortToPass}}">
+<input type="hidden" id="alreadyCategory" value="{{categoryToPass}}">
 <input type="hidden" value="{{message}}" id="message">
 
-<!-- JavaScript -->
 <script>
-    // Variables to track selected filters and sort options
+    let sort = document.getElementById("alreadySort").value;
+    let category = document.getElementById("alreadyCategory").value;
+
     let selectedCategories = [];
     let selectedSortOption = '';
+
+    if (category) {
+        selectedCategories = category.split(',').map(item => item.trim());
+    }
+    if (sort) {
+        selectedSortOption = sort.trim();
+    }
     document.querySelector('.clear-filters').addEventListener('click', function() {
         document.querySelectorAll('.sort-radio').forEach(radio => radio.checked = false)
         selectedCategories = [];
     });
-    // Update selected categories when checkboxes are toggled
     document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
             selectedCategories = Array.from(document.querySelectorAll('.filter-checkbox:checked'))
@@ -186,28 +194,27 @@
         });
     });
 
-    // Update selected sort option when a radio button is clicked
     document.querySelectorAll('.sort-radio').forEach(radio => {
         radio.addEventListener('change', (e) => {
             selectedSortOption = e.target.value;
         });
     });
 
-    // Apply button functionality
+
     document.querySelector('.apply-filters').addEventListener('click', () => {
         const currentUrlParams = new URLSearchParams();
 
-        // Add selected categories to URL as an array
+ 
         selectedCategories.forEach(category => {
             currentUrlParams.append('category[]', category);
         });
 
-        // Add selected sort option to URL
+
         if (selectedSortOption) {
             currentUrlParams.set('sort', selectedSortOption);
         }
 
-        // Redirect with updated query parameters
+    
         window.location.href = `/user/filter?${currentUrlParams.toString()}`;
     });
 
