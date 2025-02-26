@@ -61,6 +61,7 @@
                 <th scope="col">Ordered On</th>
                 <th scope="col">Delivery Status</th>
                 <th scope="col">Actions</th>
+                <th scope="col">Details</th>
             </tr>
         </thead>
         <tbody>
@@ -68,7 +69,7 @@
     <tr>
         <th scope="row">{{increment @index}}</th>
         <td>{{this.userEmail}}</td>
-        <td>{{randomId}}</td>
+        <td>{{this.orderIdentificationCode}}</td>
         <td>{{formatDate this.createdAt}}</td>
         <td>{{this.deliveryStatus}}</td>
         {{#switch this.deliveryStatus}}
@@ -88,14 +89,11 @@
             {{/case}}
             {{#default}}
                 <td class="text-center">
-                    <a href="/admin/mark-as-not-delivered/{{this.orderId}}">
-                        <button class="btn btn-danger btn-sm d-inline-flex align-items-center">
-                            <i class="bi bi-x-circle me-1"></i> Mark as Not Delivered
-                        </button>
-                    </a>
+                    <p>Already Updated</p>
                 </td>
             {{/default}}
         {{/switch}}
+        <td><a href="/admin/orderDetails/{{this.orderId}}" class="btn btn-primary text-white">View Details</a></td>
     </tr>
 {{/each}}
 

@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
-const Product = require('./productModel');  // Make sure to import the Product model
+const Product = require('./productModel'); 
 
 const categorySchema = new mongoose.Schema({
     categoryId: { type: mongoose.Schema.Types.ObjectId, auto: true },
     category: { type: String, required: true },
-    products: [{ type: mongoose.Schema.Types.ObjectId, ref: Product }], // Array of ObjectIds referencing Product
+    products: [{ type: mongoose.Schema.Types.ObjectId, ref: Product }], 
     image: { type: String, required: false },
-    categoryDiscount : { type: Number, default: 0}
+    categoryDiscount : { type: Number, default: 0},
+    isDeleted: { type: Boolean, default: false } 
 });
 
 const Category = mongoose.model('Category', categorySchema);

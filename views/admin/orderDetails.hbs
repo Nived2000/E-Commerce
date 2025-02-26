@@ -1,7 +1,41 @@
 <link rel="stylesheet" href="/styles/orderDetails.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="card w-100 shadow-lg rounded container">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="background-color: #3D464D;">
+  <div class="container-fluid">
+    <div class="col-lg-4">
+      <a href="" class="text-decoration-none">
+        <span style="color:#3D464D; background-color:#ffc800" class="h1 text-uppercase px-2">M</span>
+        <span style="color: #ffc800; background-color:#3D464D" class="h1 text-uppercase px-2 ml-n1">S</span>
+      </a>
+    </div>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link {{#ifEquals currentRoute '/admin/products'}}active{{/ifEquals}}" href="/admin/products" style="color: #ffc800;">Products</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{#ifEquals currentRoute '/admin/dashboard'}}active{{/ifEquals}}" href="/admin/dashboard" style="color: #ffc800;">Users</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{#ifEquals currentRoute '/admin/category'}}active{{/ifEquals}}" href="/admin/category" style="color: #ffc800;">Category</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{#ifEquals currentRoute '/admin/order'}}active{{/ifEquals}}" href="/admin/order" style="color: #ffc800;">Orders</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{#ifEquals currentRoute '/admin/logout'}}active{{/ifEquals}}" href="/admin/logout" style="color: #ffc800;">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="card w-100 shadow-lg rounded container mt-5">
     <div class="card-header bg-primary text-white text-center">
         <h5 class="mb-0">Order Details</h5>
     </div>
@@ -45,7 +79,7 @@
                         {{#ifEquals deliveryStatus "Delivered"}}
                         <th scope="col">Action</th>
                         {{/ifEquals}}
-                        <th scope="col">Return Reason</th>
+    
                     </tr>
                 </thead>
                 <tbody>
@@ -65,39 +99,17 @@
                             <span class="badge badge-warning">Return Pending</span>
                             {{/if}}
                             {{else}}
-                            {{#if ../returnPossible}}
-                            <a href="javascript:void(0)" style="color: black; background-color:#ffc800"
-                                class="btn btn-sm rounded shadow-sm return-product" data-product-id="{{this.id}}">
-                                Return Product
-                            </a>
-                            {{else}}
-                            <p>Return Not Possible</p>
-                            {{/if}}
                             {{/if}}
                         </td>
                         {{/ifEquals}}
 
                         <!-- Display Return Reason -->
-                        <td>
-                            {{#if this.returnReason}}
-                            <span>{{this.returnReason}}</span>
-                            {{else}}
-                            <span>Not Returned yet</span>
-                            {{/if}}
-                        </td>
                     </tr>
                     {{/each}}
                 </tbody>
             </table>
         </div>
 
-        <div class="d-flex justify-content-center">
-            <div class="col-md-6">
-                <button class="btn btn-danger w-100 rounded-pill" onclick="downloadReport()">
-                    <i class="fas fa-file-pdf"></i> Download Invoice
-                </button>
-            </div>
-        </div>
 
 
         <input type="hidden" value="{{message}}" id="message">
@@ -112,44 +124,7 @@
             text: message
         });
     }
-
-    // Handle the return product click event
-    $(document).on('click', '.return-product', function () {
-        const productId = $(this).data('product-id');
-
-        // Open SweetAlert modal to ask for return reason
-        Swal.fire({
-            title: 'Reason for Return',
-            input: 'textarea',
-            inputPlaceholder: 'Enter reason for return...',
-            showCancelButton: true,
-            confirmButtonText: 'Submit',
-            cancelButtonText: 'Cancel',
-            preConfirm: (reason) => {
-                if (reason) {
-                    window.location.href = `/user/returnProduct/${productId}?reason=${encodeURIComponent(reason)}`;
-                } else {
-                    Swal.showValidationMessage('Please enter a return reason');
-                }
-            }
-        });
-    });
-    function downloadReport() {
-
-        // Construct the download URL
-        const url = `/user/downloadInvoice/{{order.orderId}}`;
-
-        // Show a SweetAlert and initiate download
-        Swal.fire({
-            title: 'Downloading...',
-            text: `Your Invoice report is being prepared.`,
-            icon: 'info',
-            showConfirmButton: false,
-            timer: 2000,
-        }).then(() => {
-            window.location.href = url;
-        });
-    }
+   
 </script>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

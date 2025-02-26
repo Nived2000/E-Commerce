@@ -10,12 +10,12 @@
             <div class="or">SIGN-IN {{referralCode}}</div>
 
             <label for="email">Email</label>
-            <input type="text" id="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}" required />
+            <input type="text" id="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}"  />
             <p id="emailMessage" class="error-message"></p> <!-- Email error message -->
 
             <label for="password">Password</label>
             <div class="password-container">
-                <input id="password" type="password" placeholder="Enter Password" name="password" required />
+                <input id="password" type="password" placeholder="Enter Password" name="password" />
                 <span id="togglePassword" class="eye-icon">&#128065;</span> <!-- Eye icon for toggling password visibility -->
             </div>
             <p id="passwordMessage" class="error-message" style="color: red;"></p> <!-- Password error message -->
@@ -37,75 +37,66 @@
 </main>
 
 <script>
-    // Function to display messages in <p> tags
     function displayMessages() {
-        const message2 = document.getElementById('message2').value;
-        const message = document.getElementById('message').value;
+    const message2 = document.getElementById('message2').value;
+    const message = document.getElementById('message').value;
 
-        // Display message2 if present
-        if (message2) {
-            const emailMessage = document.getElementById("emailMessage");
-            emailMessage.textContent = message2;
-        }
+    if (message2) {
+        document.getElementById("emailMessage").textContent = message2;
+    }
+    if (message) {
+        document.getElementById("passwordMessage").textContent = message;
+    }
+}
 
-        // Display message if present
-        if (message) {
-            const passwordMessage = document.getElementById("passwordMessage");
-            passwordMessage.textContent = message;
-        }
+displayMessages();
+
+function formValidate() {
+    const emailInput = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const emailMessage = document.getElementById("emailMessage");
+    const passwordMessage = document.getElementById("passwordMessage");
+
+    emailMessage.textContent = '';
+    passwordMessage.textContent = '';
+
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (emailInput === '') {
+        emailMessage.textContent = 'Email field cannot be empty!';
+        return false;
     }
 
-    // Call function to display messages
-    displayMessages();
-
-    // Form Validation Function
-    function formValidate() {
-        const emailInput = document.getElementById("email");
-        const password = document.getElementById("password").value;
-        const emailMessage = document.getElementById("emailMessage");
-        const passwordMessage = document.getElementById("passwordMessage");
-
-        // Clear previous messages
-        emailMessage.textContent = '';
-        passwordMessage.textContent = '';
-
-        // Regex for valid email format
-        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-        // Validate email
-        if (!emailPattern.test(emailInput.value)) {
-            emailMessage.textContent = 'Please enter a valid email address!';
-            return false;
-        }
-
-        // Validate password
-        if (!password) {
-            passwordMessage.textContent = 'Password field cannot be empty!';
-            return false;
-        }
-
-        // If all validations pass
-        return true;
+    if (!emailPattern.test(emailInput)) {
+        emailMessage.textContent = 'Please enter a valid email address!';
+        return false;
     }
 
-    // Toggle password visibility
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordField = document.getElementById('password');
-    togglePassword.addEventListener('click', function () {
-        // Toggle the password input type between "password" and "text"
-        if (passwordField.type === 'password') {
-            passwordField.type = 'text';
-            togglePassword.textContent = '👁️'; // Change eye icon to indicate password is visible
-        } else {
-            passwordField.type = 'password';
-            togglePassword.textContent = '👁️‍🗨️'; // Change back to the original eye icon
-        }
-    });
+    if (password === '') {
+        passwordMessage.textContent = 'Password field cannot be empty!';
+        return false;
+    }
 
-    // Attach validation function to form submission
-    document.getElementById("emailForm").onsubmit = function () {
-        return formValidate();
-    };
+    return true;
+}
+
+const togglePassword = document.getElementById('togglePassword');
+const passwordField = document.getElementById('password');
+
+togglePassword.addEventListener('click', function () {
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        togglePassword.textContent = '👁️';
+    } else {
+        passwordField.type = 'password';
+        togglePassword.textContent = '👁️‍🗨️';
+    }
+});
+
+document.getElementById("emailForm").onsubmit = function () {
+    return formValidate();
+};
+
 </script>
 
 <style>

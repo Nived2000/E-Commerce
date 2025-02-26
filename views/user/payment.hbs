@@ -1,89 +1,153 @@
-<div class="payment-container">
-    <h2>Processing Your Payment...</h2>
-    <p>Please do not refresh or close this page.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
 
-    <form id="razorpay-form" action="/user/verify-payment" method="POST">
-        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
-        <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="{{orderId}}">
-        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
-    </form>
-</div>
+        .payment-container {
+            display: none; /* Initially hidden */
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1s ease-in-out;
+        }
 
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-    function openRazorpay() {
-        const options = {
-            key: "{{key}}",
-            amount: "{{amount}}",
-            currency: "INR",
-            name: "MULTI SHOP",
-            description: "Order Payment",
-            order_id: "{{orderId}}",
-            handler: function (response) {
-                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-                document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
-                document.getElementById('razorpay_signature').value = response.razorpay_signature;
-                document.getElementById('razorpay-form').submit();
-            },
-            theme: {
-                color: "#3399cc",
-            },
-            modal: {
-                escape: false, // Prevents accidental closing with ESC
-                backdropclose: false, // Prevents closing on backdrop click
-                ondismiss: function () {
-                    // Razorpay was closed, show only the "Go to Home" button
-                    document.getElementById("home-container").style.display = "block";
-                }
+        h1 {
+            color: #d9534f;
+            font-size: 26px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .retry-btn {
+            background-color: #f0ad4e;
+            color: white;
+            border: none;
+            margin-right: 10px;
+        }
+
+        .retry-btn:hover {
+            background-color: #ec971f;
+        }
+
+        .home-btn {
+            background-color: #5bc0de;
+            color: white;
+            border: none;
+        }
+
+        .home-btn:hover {
+            background-color: #31b0d5;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
             }
-        };
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container" id="payment-failed">
+        <h1>Payment Failed</h1>
+        <p>Your payment was not successful. Please try again.</p>
 
-        const rzp = new Razorpay(options);
-        rzp.open();
-    }
+        <button class="btn retry-btn" onclick="retryPayment()">Retry Payment</button>
+        <a href="/user/home" class="btn home-btn">Go to Home</a>
 
-    // Open Razorpay when the page loads
-    openRazorpay();
-</script>
+        <form id="razorpay-form" action="/user/verify-payment" method="POST">
+            <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+            <input type="hidden" name="razorpay_order_id" id="razorpay_order_id" value="{{orderId}}">
+            <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+        </form>
+    </div>
 
-<div id="home-container" class="center-container" style="display: none;">
-    <a href="/user/home" class="btn-home">Go to Home Page</a>
-</div>
+    <script>
+        // Delay content display by 10 seconds
+        setTimeout(() => {
+            document.getElementById("payment-failed").style.display = "block";
+        }, 10000);
 
-<style>
-    .payment-container {
-        text-align: center;
-        padding: 20px;
-    }
+        function retryPayment() {
+            Swal.fire({
+                title: "Retry Payment?",
+                text: "Would you like to try the payment again?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, Retry",
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/user/retry-payment/{{order.orderId}}";
+                }
+            });
+        }
 
-    .center-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #f8f9fa;
-    }
+        function openRazorpay() {
+            const options = {
+                key: "{{key}}",
+                amount: "{{amount}}",
+                currency: "INR",
+                name: "MULTI SHOP",
+                description: "Order Payment",
+                order_id: "{{orderId}}",
+                handler: function (response) {
+                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                    document.getElementById('razorpay-form').submit();
+                },
+                theme: { color: "#3399cc" },
+                modal: {
+                    escape: false,
+                    backdropclose: false,
+                    ondismiss: function () {
+                        document.getElementById("payment-failed").style.display = "block";
+                    }
+                }
+            };
 
-    .btn-home {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 15px 30px;
-        background-color: #3399cc;
-        color: white;
-        text-decoration: none;
-        font-size: 18px;
-        font-weight: bold;
-        border-radius: 25px;
-        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-        transition: background-color 0.3s ease, transform 0.2s ease;
-    }
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
 
-    .btn-home:hover {
-        background-color: #287ba0;
-        transform: translateY(-3px);
-    }
-
-    .btn-home:active {
-        transform: translateY(2px);
-    }
-</style>
+        // Open Razorpay when the page loads
+        openRazorpay();
+    </script>
+</body>
+</html>

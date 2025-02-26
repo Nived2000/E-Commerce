@@ -35,7 +35,7 @@ const razorpay = new Razorpay({
 const registerUser = async (req, res) => {
     try {
         const { email, password, name, phone, code } = req.body
-        
+
 
         const user = await User.findOne({ email });
         if (user) {
@@ -74,7 +74,7 @@ const registerUser = async (req, res) => {
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error("Error sending email: ", error);
-                return res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+                return res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
             }
 
             res.render('user/verifyOtp', {
@@ -90,7 +90,7 @@ const registerUser = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -139,7 +139,7 @@ const resendOtp = async (req, res) => {
 
 // Verifies the OTP provided by the user and completes registration
 const verifyOtp = async (req, res) => {
-    const { email, password, phone, name, otp, code } = req.body; 
+    const { email, password, phone, name, otp, code } = req.body;
     let referralCode = code
     const storedOtp = otpStorage[email];
 
@@ -160,10 +160,10 @@ const verifyOtp = async (req, res) => {
 
     if (currentTime - storedOtp.timestamp > otpExpiryTime) {
         delete otpStorage[email];
-        return res.render('user/register', { 
-            message: "OTP expired, Register user again", 
-            hideHeader: true, 
-            hideFooter: true 
+        return res.render('user/register', {
+            message: "OTP expired, Register user again",
+            hideHeader: true,
+            hideFooter: true
         });
     }
 
@@ -203,14 +203,14 @@ const verifyOtp = async (req, res) => {
 
                 await Transaction.updateOne(
                     { userId: referrer.userId },
-                    { 
-                        $push: { 
-                            transactions: { 
-                                amount: (0.5 * referralBonus), 
-                                type: 'credit', 
-                                date: new Date() 
-                            } 
-                        } 
+                    {
+                        $push: {
+                            transactions: {
+                                amount: (0.5 * referralBonus),
+                                type: 'credit',
+                                date: new Date()
+                            }
+                        }
                     },
                     { upsert: true }
                 );
@@ -231,14 +231,14 @@ const verifyOtp = async (req, res) => {
 
                 await Transaction.updateOne(
                     { userId: newUser.userId },
-                    { 
-                        $push: { 
-                            transactions: { 
-                                amount: referralBonus, 
-                                type: 'credit', 
-                                date: new Date() 
-                            } 
-                        } 
+                    {
+                        $push: {
+                            transactions: {
+                                amount: referralBonus,
+                                type: 'credit',
+                                date: new Date()
+                            }
+                        }
                     },
                     { upsert: true }
                 );
@@ -333,7 +333,7 @@ const loginUser = async (req, res) => {
 // Handles Google OAuth callback and logs in the user
 const googleCallback = async (req, res) => {
     try {
-        
+
         const user = req.user;
 
         req.session.user = true;
@@ -373,7 +373,7 @@ const loadHome = async (req, res) => {
     }
 
     let products = await Product.find({ isListed: true });
-    let categories = await Category.find();
+    let categories = await Category.find({ isDeleted: false });
     let discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
     let banners = await Banner.find({})
 
@@ -382,7 +382,8 @@ const loadHome = async (req, res) => {
         email: req.session.email,
         user,
         categories,
-        discountedCategories, banners
+        discountedCategories, banners,
+        activeRoute: "/user/home"
     });
 };
 
@@ -401,8 +402,11 @@ const loadProductDetails = async (req, res) => {
     let proId = req.params.id;
     let category = await Category.findOne({ products: { $in: [proId] } });
     let product = await Product.findOne({ productId: proId });
+    if (!product.isListed) {
+        return res.redirect('/user/products')
+    }
     if (!product) {
-        return res.status(404).render('user/404', { message: 'Product not found', hideFooter: true, hideHeader:true });
+        return res.status(404).render('user/404', { message: 'Product not found', hideFooter: true, hideHeader: true });
     }
     let stock = product.stock;
     let discount = product.discount || 0;
@@ -420,17 +424,17 @@ const loadProductDetails = async (req, res) => {
         return;
     }
 
-    
+
 
     if (!product.isListed) {
-        return res.redirect('/user/home', {banners, discountedCategories,});
+        return res.redirect('/user/home', { banners, discountedCategories, });
     }
 
     let categoryId = category.categoryId.toString();
     let categoryItems = await Category.findOne({ categoryId }, { products: 1, _id: 0 });
 
     if (!categoryItems || !categoryItems.products) {
-        return res.status(404).render('user/404', { message: 'No products found in the category' ,hideFooter: true, hideHeader:true });
+        return res.status(404).render('user/404', { message: 'No products found in the category', hideFooter: true, hideHeader: true });
     }
 
     const ids = categoryItems.products.map(id => id.toString());
@@ -455,7 +459,7 @@ const loadCategory = async (req, res) => {
         return res.redirect('/user/login');
     }
     categoryID = req.params.id;
-    let category = await Category.findOne({ categoryId: categoryID }, { products: 1, _id: 0 });
+    let category = await Category.findOne({ categoryId: categoryID }, { products: 1, _id: 0 })
 
     const ids = category.products.map(id => id.toString());
     let products = [];
@@ -585,11 +589,11 @@ const loadProducts = async (req, res) => {
             products,
             user,
             currentPage: page,
-            totalPages: Math.ceil(totalProducts / limit),
+            totalPages: Math.ceil(totalProducts / limit), activeRoute: "/user/products"
         });
     } catch (error) {
         console.error('Error loading products:', error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -607,7 +611,7 @@ const loadProfile = async (req, res) => {
         transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
     }
 
-    res.render('user/profile', { user, walletAmount, transactions });
+    res.render('user/profile', { user, walletAmount, transactions, activeRoute: "/user/profile" });
 };
 
 
@@ -652,9 +656,9 @@ const postAddress = async (req, res) => {
     let walletAmount = wallet ? wallet.amountAvailable : 0;
     let transaction = await Transaction.findOne({ userId: user.userId });
     let transactions = [];
-        if (transaction) {
-            transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
-        }
+    if (transaction) {
+        transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
+    }
     res.render('user/profile', { message: "Address added successfully", user, walletAmount, transactions });
 };
 
@@ -667,9 +671,9 @@ const postProfile = async (req, res) => {
     let walletAmount = wallet.amountAvailable;
     let transaction = await Transaction.findOne({ userId: user.userId });
     let transactions = [];
-        if (transaction) {
-            transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
-        }
+    if (transaction) {
+        transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
+    }
     res.render('user/profile', { message: "User details updated", user, walletAmount, transactions });
 };
 
@@ -709,9 +713,9 @@ const postEditedAddress = async (req, res) => {
     let walletAmount = wallet.amountAvailable;
     let transaction = await Transaction.findOne({ userId: user.userId });
     let transactions = [];
-        if (transaction) {
-            transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
-        }
+    if (transaction) {
+        transactions = transaction.transactions.sort((a, b) => b.createdAt - a.createdAt);
+    }
 
     res.render('user/profile', { message: "User Address updated", user, walletAmount, transactions });
 };
@@ -721,7 +725,7 @@ const loadCart = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.session.email }).lean();
         if (!user) {
-            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
         }
 
         const cart = await Cart.findOne({ userId: user.userId }).lean();
@@ -759,11 +763,11 @@ const loadCart = async (req, res) => {
             });
         }
 
-        res.render('user/cart', { user, products: filteredProducts });
+        res.render('user/cart', { user, products: filteredProducts, activeRoute: "/user/cart" });
 
     } catch (error) {
         console.error("Error loading cart page:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -864,7 +868,7 @@ const addToCart = async (req, res) => {
         });
     } catch (error) {
         console.error("Error adding to cart:", error);
-        return res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        return res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -889,11 +893,11 @@ const loadCheckout = async (req, res) => {
     // Load the checkout page by fetching user, cart details, updating quantities, and applying filters/coupons
     try {
         const user = await User.findOne({ email: req.session.email }).lean();
-        if (!user) return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
+        if (!user) return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
 
         const address = user.address || null;
         const updatedQuantities = JSON.parse(req.body.updatedQuantities);
-        const cart = await Cart.findOne({ userId: user.userId }).lean();
+
 
         await Promise.all(updatedQuantities.map(async ({ id, quantity }) => {
             await Cart.updateOne(
@@ -901,6 +905,8 @@ const loadCheckout = async (req, res) => {
                 { $set: { "products.$.quantity": quantity } }
             );
         }));
+
+        const cart = await Cart.findOne({ userId: user.userId }).lean();
 
         if (!cart || !cart.products || cart.products.length === 0) {
             return res.render('user/checkout', {
@@ -966,18 +972,28 @@ const loadCheckout = async (req, res) => {
         });
     } catch (error) {
         console.error("Error loading checkout page:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
+};
+
+const generateOrderIdentificationCode = async () => {
+    let orderIdentificationCode;
+    let exists;
+    do {
+        orderIdentificationCode = `ORD${Math.floor(1000 + Math.random() * 9000)}`; // Generates ORD1234-ORD9999
+        exists = await Order.findOne({ orderIdentificationCode });
+    } while (exists);
+    return orderIdentificationCode;
 };
 
 const placeOrder = async (req, res) => {
     try {
         const { name, email, phone, line1, city, state, country, zipCode, paymentMethod } = req.body;
-        console.log(paymentMethod)
+        console.log(paymentMethod);
         if (!req.session.email) return res.status(401).send("Unauthorized access. Please log in.");
 
         const user = await User.findOne({ email: req.session.email });
-        if (!user) return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
+        if (!user) return res.status(404).render('user/404', { hideFooter: true, hideHeader: true });
 
         const cart = await Cart.findOne({ userId: user.userId });
         if (!cart || !cart.products || cart.products.length === 0) return res.status(400).send("Cart is empty.");
@@ -1003,17 +1019,20 @@ const placeOrder = async (req, res) => {
             const coupon = await Coupon.findOne({ couponName });
             if (coupon) {
                 if (coupon.discountAmount) {
-                    couponDiscount = coupon.discountAmount || 0
+                    couponDiscount = coupon.discountAmount || 0;
                 } else if (coupon.discountPercentage) {
-                    couponDiscount = Math.ceil((coupon.discountPercentage / 100) * totalPrice) || 0
+                    couponDiscount = Math.ceil((coupon.discountPercentage / 100) * totalPrice) || 0;
                 }
             }
         }
 
         var discountedCategories = await Category.find({ categoryDiscount: { $gt: 0 } }).limit(2);
-        var banners = await Banner.find({})
+        var banners = await Banner.find({});
 
         const orderAmount = filteredProducts.reduce((total, product) => total + product.price * product.quantity, 100) - couponDiscount - walletAmount;
+
+        const orderIdentificationCode = await generateOrderIdentificationCode();
+
         if (!paymentMethod) {
             const order = new Order({
                 userId: user.userId,
@@ -1023,12 +1042,13 @@ const placeOrder = async (req, res) => {
                 orderAmount,
                 paymentStatus: "Paid",
                 walletAmount,
-                couponDiscount
+                couponDiscount,
+                orderIdentificationCode
             });
 
             await order.save();
 
-            
+            // Update stock
             for (const product of filteredProducts) {
                 const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
                 if (currentProduct) {
@@ -1066,7 +1086,7 @@ const placeOrder = async (req, res) => {
                 discountedCategories,
                 banners
             });
-        }else if (paymentMethod === "Cash on Delivery") {
+        } else if (paymentMethod === "Cash on Delivery") {
             const order = new Order({
                 userId: user.userId,
                 address: { name, phone, email, line1, state, city, country, zipCode },
@@ -1075,38 +1095,19 @@ const placeOrder = async (req, res) => {
                 orderAmount,
                 paymentStatus: "Pending",
                 walletAmount,
-                couponDiscount
+                couponDiscount,
+                orderIdentificationCode
             });
 
             await order.save();
 
-            
             for (const product of filteredProducts) {
                 const currentProduct = await Product.findOne({ name: product.productName, size: product.size });
                 if (currentProduct) {
                     const newStock = currentProduct.stock - product.quantity;
-                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item`, banners,discountedCategories
-                     });
+                    if (newStock < 0) return res.render('user/home', { message: `Insufficient stock for an item`, banners, discountedCategories });
 
                     await Product.updateOne({ name: product.productName, size: product.size }, { $set: { stock: newStock } });
-                }
-            }
-
-            if (walletAmount > 0) {
-                await Wallet.updateOne({ userId: user.userId }, { $inc: { amountAvailable: -walletAmount } });
-
-                let transactionExist = await Transaction.findOne({ userId: user.userId });
-                if (!transactionExist) {
-                    let newTransaction = new Transaction({
-                        userId: user.userId,
-                        transactions: [{ amount: walletAmount, type: "debit", createdAt: new Date() }],
-                    });
-                    await newTransaction.save();
-                } else {
-                    await Transaction.updateOne(
-                        { userId: user.userId },
-                        { $push: { transactions: { amount: walletAmount, type: "debit", createdAt: new Date() } } }
-                    );
                 }
             }
 
@@ -1119,7 +1120,7 @@ const placeOrder = async (req, res) => {
                 banners,
                 discountedCategories
             });
-        }else if (paymentMethod === "Online Payment") {
+        } else if (paymentMethod === "Online Payment") {
             const amountInPaise = Math.round(orderAmount * 100);
             const razorpayOrder = await razorpay.orders.create({
                 amount: amountInPaise,
@@ -1127,39 +1128,42 @@ const placeOrder = async (req, res) => {
                 receipt: `receipt_${Date.now()}`,
                 notes: { email: user.email, phone: user.phone },
             });
-        
-            // Save order in the database with status "Payment Pending"
+
             const order = new Order({
                 userId: user.userId,
                 address: { name, phone, email, line1, state, city, country, zipCode },
                 products: filteredProducts,
                 paymentMethod,
                 orderAmount,
-                paymentStatus: "Pending", // Initially set to "Payment Pending"
+                paymentStatus: "Pending",
                 razorpayOrderId: razorpayOrder.id,
                 walletAmount,
                 couponDiscount,
-                deliveryStatus: "Nil"
+                deliveryStatus: "Nil",
+                orderIdentificationCode
             });
-        
+
             await order.save();
-        
+
+
             res.render("user/payment", {
                 orderId: razorpayOrder.id,
                 amount: razorpayOrder.amount,
                 key: process.env.RAZORPAY_KEY_ID,
                 user,
                 hideFooter: true,
+                hideHeader: true,
+                order
+            })
 
-            });
         }
-        
 
     } catch (error) {
         console.error("Error placing order:", error.message);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true });
     }
 };
+
 
 
 // Function to sort, filter, and paginate products based on user input
@@ -1196,7 +1200,7 @@ const sortAndFilter = async (req, res) => {
 
         const totalProducts = await Product.countDocuments(filterStage);
 
-        
+
         res.render('user/listProducts', {
             products,
             currentPage: page,
@@ -1207,7 +1211,7 @@ const sortAndFilter = async (req, res) => {
         });
     } catch (error) {
         console.error('Error in sort and filter:', error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -1219,13 +1223,13 @@ const cancelOrder = async (req, res) => {
         const currOrders = await Order.findOne({ _id });
 
         if (!currOrders) {
-            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
         }
 
         let refundAmount;
         const walletAmount = currOrders.walletAmount;
 
-        if (currOrders.paymentMethod === "Online Payment" || currOrders.paymentMethod  === "Wallet") {
+        if (currOrders.paymentMethod === "Online Payment" || currOrders.paymentMethod === "Wallet") {
             refundAmount = currOrders.orderAmount - 100 + walletAmount;
         } else if (currOrders.paymentMethod === "Cash on Delivery") {
             refundAmount = walletAmount;
@@ -1297,7 +1301,7 @@ const cancelOrder = async (req, res) => {
         res.render('user/orders', { orders, message: "Order is cancelled" });
     } catch (error) {
         console.error("Error cancelling order:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -1306,7 +1310,7 @@ const loadOrders = async (req, res) => {
     try {
         let user = await User.findOne({ email: req.session.email });
         if (!user) {
-            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
         }
 
         const page = parseInt(req.query.page) || 1;
@@ -1333,11 +1337,12 @@ const loadOrders = async (req, res) => {
             limit,
             totalPages,
             previousPage,
-            nextPage
+            nextPage,
+            activeRoute: "/user/orders"
         });
     } catch (error) {
         console.error("Error loading orders:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -1347,7 +1352,7 @@ const orderDetails = async (req, res) => {
     let order = await Order.findOne({ orderId });
 
     if (!order) {
-        return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
+        return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
     }
 
     let products = order.products;
@@ -1368,14 +1373,12 @@ const verifyPayment = async (req, res) => {
 
         const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
 
-        // Fetch the existing order with "Payment Pending" status
         const order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
 
         if (!order) {
             return res.status(400).send("Order not found. Please try again.");
         }
 
-        // Verify the payment signature
         const generatedSignature = crypto
             .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -1385,18 +1388,18 @@ const verifyPayment = async (req, res) => {
             return res.status(400).send("Payment verification failed.");
         }
 
-        // Update order status to "Completed" and add Razorpay payment ID
+
         await Order.updateOne(
             { razorpayOrderId: razorpay_order_id },
-            { 
-                $set: { 
-                    paymentStatus: "Paid", 
+            {
+                $set: {
+                    paymentStatus: "Paid",
                     deliveryStatus: "In Transit"
-                } 
+                }
             }
         );
 
-        let walletAmount = order.walletAmount 
+        let walletAmount = order.walletAmount
         let userId = order.userId
 
         if (walletAmount > 0) {
@@ -1411,7 +1414,7 @@ const verifyPayment = async (req, res) => {
                 await newTransaction.save();
             } else {
                 await Transaction.updateOne(
-                    { userId},
+                    { userId },
                     { $push: { transactions: { amount: walletAmount, type: "debit", createdAt: new Date() } } }
                 );
             }
@@ -1429,20 +1432,21 @@ const verifyPayment = async (req, res) => {
             })
         );
 
-        // Clear the user's cart
+
         await Cart.updateOne({ userId: order.userId }, { $set: { products: [] } });
+
 
         res.render('user/home', {
             message: "Order was placed successfully",
             user: await User.findOne({ email: req.session.email }),
             categories: await Category.find({}),
             banners, discountedCategories
-            
-            
+
+
         });
     } catch (error) {
         console.error("Error verifying payment:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
@@ -1464,18 +1468,18 @@ const searchItem = async (req, res) => {
     // Searches for products based on the query parameter and incorporates category and sort
     try {
         const query = req.query.q;
-        const category = req.query.category; 
-        const sort = req.query.sort;  
+        const category = req.query.category;
+        const sort = req.query.sort;
 
         let sortToPass = sort
         let categoryToPass = category
-        
+
         const filterStage = {};
         if (category) {
             filterStage.category = { $in: category.split(',') };
         }
 
-        
+
         let sortStage = {};
         if (sort === 'price_asc') {
             sortStage.price = 1;
@@ -1487,15 +1491,15 @@ const searchItem = async (req, res) => {
             sortStage.orderCount = -1;
         }
 
-    
+
         const products = await Product.find({
-            name: { $regex: query, $options: 'i' }, 
-            ...filterStage,  
+            name: { $regex: query, $options: 'i' },
+            ...filterStage,
         }).sort(sortStage);
 
-        res.render('user/searchedProducts', { 
-            products, 
-            query, 
+        res.render('user/searchedProducts', {
+            products,
+            query,
             category,
             sort,
             sortToPass,
@@ -1503,7 +1507,7 @@ const searchItem = async (req, res) => {
         });
     } catch (error) {
         console.error('Search error:', error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true});
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true });
     }
 };
 
@@ -1519,7 +1523,7 @@ const addToWishlist = async (req, res) => {
         let discount = product.discount
         let discountedPrice = Math.floor(product.price - (discount / 100) * product.price)
         if (!product) {
-            return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
         }
         let sizesArray = await Product.find({ name: product.name }, { size: 1, _id: 0 });
         const sizes = sizesArray.map(item => item.size);
@@ -1546,12 +1550,11 @@ const addToWishlist = async (req, res) => {
         res.redirect(`/user/productDetail/${id}`);
     } catch (error) {
         console.error("Error adding to wishlist:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
 const loadWishlist = async (req, res) => {
-    // Loads the user's wishlist with pagination and handles empty wishlist scenario.
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 4;
@@ -1561,33 +1564,36 @@ const loadWishlist = async (req, res) => {
             .limit(limit);
         const user = await User.findOne({ email: req.session.email });
         const totalProducts = await Product.countDocuments({ isListed: true });
+
         if (!user) {
-            return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true });
         }
-        const wishlist = await Wishlist.findOne({ userId: user.userId });
+
+        let wishlist = await Wishlist.findOne({ userId: user.userId });
         if (!wishlist) {
-            return res.render('user/listProducts', {
-                products,
-                user,
-                currentPage: page,
-                totalPages: Math.ceil(totalProducts / limit),
-                message: "Add something to wishlist first"
-            });
-        }
-        const wishlistProducts = wishlist.products;
-        if (wishlistProducts.length === 0) {
+            wishlist = await Wishlist.create({ userId: user.userId, products: [] });
             return res.render('user/wishlist', {
-                wishlistProducts,
+                wishlistProducts: [],
                 message: "Your wishlist is empty!",
                 swal: true,
             });
         }
-        res.render('user/wishlist', { wishlistProducts });
+        if (wishlist.products.length === 0) {
+            return res.render('user/wishlist', {
+                wishlistProducts: [],
+                message: "Your wishlist is empty!",
+                swal: true,
+            });
+        }
+
+        res.render('user/wishlist', { wishlistProducts: wishlist.products, activeRoute: "/user/wishlist" });
+
     } catch (error) {
         console.error("Error loading wishlist:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true });
     }
 };
+
 
 const wishlistRemove = async (req, res) => {
     // Removes a product from the user's wishlist based on the product ID.
@@ -1610,7 +1616,7 @@ const retryPayment = async (req, res) => {
         let order = await Order.findOne({ orderId });
 
         if (!order) {
-            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
         }
 
         if (order.paymentStatus !== "Pending" || order.paymentMethod !== "Online Payment") {
@@ -1618,13 +1624,13 @@ const retryPayment = async (req, res) => {
         }
 
         const options = {
-            amount: order.orderAmount * 100, 
+            amount: order.orderAmount * 100,
             currency: "INR",
             receipt: order._id.toString(),
-            payment_capture: 1, 
+            payment_capture: 1,
         };
 
-      
+
         const razorpayOrder = await razorpay.orders.create(options);
 
         await Order.updateOne(
@@ -1632,37 +1638,38 @@ const retryPayment = async (req, res) => {
             { $set: { razorpayOrderId: razorpayOrder.id } }
         );
 
-       
+
         res.render("user/payment", {
             orderId: razorpayOrder.id,
-            amount: razorpayOrder.amount, 
+            amount: razorpayOrder.amount,
             key: process.env.RAZORPAY_KEY_ID,
-            user: req.user, 
+            user: req.user,
             hideFooter: true,
+            hideHeader: true
         });
     } catch (error) {
         console.error("Error while retrying payment:", error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 
 const downloadInvoice = async (req, res) => {
     try {
         let orderId = req.params.id;
-        
-      
-        const order = await Order.findOne({orderId});
+
+
+        const order = await Order.findOne({ orderId });
         if (!order) {
-            return res.status(404).render('user/404', {hideFooter: true, hideHeader:true})
+            return res.status(404).render('user/404', { hideFooter: true, hideHeader: true })
         }
 
         let userId = order.userId
-        let user = await User.findOne({userId})
+        let user = await User.findOne({ userId })
 
         const doc = new PDFDocument({ margin: 50 });
         const filePath = path.join(__dirname, `invoice_${orderId}.pdf`);
         const stream = fs.createWriteStream(filePath);
-        
+
         doc.pipe(stream);
 
         // **Header Section**
@@ -1685,7 +1692,7 @@ const downloadInvoice = async (req, res) => {
         doc.fontSize(14).fillColor('#000').text('Products', { underline: true });
         doc.moveDown();
         doc.fontSize(12).fillColor('#444');
-        
+
         doc.text('-----------------------------------------------------------');
         doc.text(`Item         | Size   | Quantity  | Price (₹)`);
         doc.text('-----------------------------------------------------------');
@@ -1721,14 +1728,14 @@ const downloadInvoice = async (req, res) => {
             res.download(filePath, `invoice_${orderId}.pdf`, (err) => {
                 if (err) {
                     console.error(err);
-                    res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+                    res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
                 }
-                fs.unlinkSync(filePath); 
+                fs.unlinkSync(filePath);
             });
         });
     } catch (error) {
         console.error(error);
-        res.status(500).render('user/500', {hideFooter: true, hideHeader:true})
+        res.status(500).render('user/500', { hideFooter: true, hideHeader: true })
     }
 };
 

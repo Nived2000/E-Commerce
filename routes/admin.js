@@ -34,7 +34,7 @@ router.post('/addCategory', auth.checkSessionAdmin, upload.uploadSingle, adminCo
 router.get('/addProductToCategory/:id', auth.checkSessionAdmin, adminController.loadCategoryManagement);
 router.get('/addCategoryDicount/:id', auth.checkSessionAdmin, adminController.loadEditCategory)
 router.get('/postProductToCategory', auth.checkSessionAdmin, adminController.postProductToCategory);
-router.get('/deleteCategory/:id', auth.checkSessionAdmin, adminController.deleteCategory);
+router.get('/toggleCategoryStatus/:id/', auth.checkSessionAdmin, adminController.toggleCategoryStatus);
 router.post('/postDiscount/:id', auth.checkSessionAdmin, adminController.postDiscount )
 
 // Order Management
@@ -54,5 +54,6 @@ router.get('/remove-coupon/:id', auth.checkSessionAdmin, adminController.removeC
 
 router.get('/banner', auth.checkSessionAdmin, adminController.loadAddBanner)
 router.post('/addBanner', auth.checkSessionAdmin, upload.uploadSingle, adminController.addBanner)
+router.get('/orderDetails/:id', auth.checkSessionAdmin, adminController.orderDetails)
 
 module.exports = router;

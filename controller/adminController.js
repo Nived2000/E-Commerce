@@ -173,7 +173,7 @@ const unlistProduct = async (req, res) => {
 // Adds a product to the listing
 const listProduct = async (req, res) => {
     let proID = req.params.id;
-    let product = await Product.findOne({ productId: proID });
+    let product = await Product.findOne({ productId: proID }).sort({createdAt: -1});
     if (product) {
         if (!product.isListed) {
             await Product.updateOne({ productId: proID }, { $set: { isListed: true } });
@@ -187,10 +187,13 @@ const listProduct = async (req, res) => {
 const loadEditProduct = async (req, res) => {
     let proID = req.params.id;
     let product = await Product.findOne({ productId: proID });
+    let categories = await Category.find({})
+    console.log(categories);
+    
     if(!product){
         return res.status(404).render('user/404', {hideFooter: true, hideHeader:true ,admin:true})
     }
-    res.render('admin/editProduct', { product, hideHeader: true, hideFooter: true });
+    res.render('admin/editProduct', { product, hideHeader: true, hideFooter: true, categories });
 };
 
 // Edits an existing product in the database
@@ -345,12 +348,42 @@ const postProductToCategory = async (req, res) => {
 }
 
 // Deletes a category and updates the list of categories
-const deleteCategory = async (req, res) => {
-    let categoryId = req.params.id
-    await Category.deleteOne({ categoryId })
-    let categories = await Category.find()
-    res.render('admin/listCategory', { categories, message: "Category deleted Successfully", hideHeader: true, hideFooter: true, currentRoute: req.originalUrl })
-}
+const toggleCategoryStatus = async (req, res) => {
+    try {
+        let categoryId = req.params.id;
+        let category = await Category.findOne({ categoryId });
+        
+        
+
+        if (!category) {
+            return res.status(404).json({ success: false, message: "Category not found" });
+        }
+
+        let newStatus = !category.isDeleted; // Toggle status
+
+        // Update category status
+        await Category.updateOne({ categoryId }, { $set: { isDeleted: newStatus } });
+
+        // If category is unlisted, also unlist products under it
+        await Product.updateMany({ category: category.category }, { isListed: !newStatus });
+
+        let categories = await Category.find();
+
+        res.render('admin/listCategory', {
+            categories,
+            message: `Category ${newStatus ? "unlisted" : "listed"} successfully`,
+            hideHeader: true,
+            hideFooter: true,
+            currentRoute: req.originalUrl
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+    }
+};
+
+
 
 // Lists orders with pagination and renders the orders page
 const listOrders = async (req, res) => {
@@ -835,49 +868,51 @@ const downloadReport = async (req, res) => {
         }
 
         if (format === 'pdf') {
-            const doc = new PDFDocument({ margin: 30 });
+            const doc = new PDFDocument({ margin: 40 });
             const filePath = path.join(reportsDir, 'salesReport.pdf');
             const stream = fs.createWriteStream(filePath);
             doc.pipe(stream);
 
-            doc.fontSize(10).text('Sales Report', { align: 'center' });
+            doc.fontSize(16).font('Helvetica-Bold').text('Sales Report', { align: 'center' });
+            doc.moveDown(0.5);
+            doc.fontSize(10).text(`Date Range: ${startDate} to ${endDate}`, { align: 'center' });
             doc.moveDown(1);
 
-            const headerHeight = 18;
-
-            doc.rect(50, doc.y, 50, headerHeight).fill('#3D464D');
-            doc.rect(100, doc.y, 150, headerHeight).fill('#3D464D');
-            doc.rect(250, doc.y, 100, headerHeight).fill('#3D464D');
-            doc.rect(350, doc.y, 150, headerHeight).fill('#3D464D');
-            doc.rect(500, doc.y, 100, headerHeight).fill('#3D464D');
-
-            doc.fontSize(8).fillColor('white')
-                .text('Sl. No', 55, 60, { width: 50, align: 'center' })
-                .text('Order ID', 105, 60, { width: 150, align: 'center' })
-                .text('Date (dd-mm-yyyy)', 255, 60, { width: 100, align: 'center' })
-                .text('Customer ID', 355, 60, { width: 150, align: 'center' })
-                .text('Total Amount (₹)', 505, 60, { width: 100, align: 'center' });
+        
+            doc.rect(50, doc.y, 500, 22).fill('#3D464D');
+            doc.fontSize(10).fillColor('white').font('Helvetica-Bold')
+                .text('Sl. No', 55, doc.y + 5, { width: 50, align: 'center' })
+                .text('Order ID', 115, doc.y + 5, { width: 120, align: 'center' })
+                .text('Date', 245, doc.y + 5, { width: 90, align: 'center' })
+                .text('Amount (₹)', 455, doc.y + 5, { width: 80, align: 'center' });
 
             doc.moveDown(1);
+            let totalAmount = 0;
+
+    
             orders.forEach((order, index) => {
-                const yPosition = doc.y + 3;
-                const rowHeight = 18;
+                const yPosition = doc.y;
+                const rowHeight = 20;
+                const bgColor = index % 2 === 0 ? '#F2F2F2' : '#FFFFFF';
 
-                doc.rect(50, yPosition, 50, rowHeight).stroke();
-                doc.rect(120, yPosition, 150, rowHeight).stroke();
-                doc.rect(270, yPosition, 100, rowHeight).stroke();
-                doc.rect(380, yPosition, 100, rowHeight).stroke();
-                doc.rect(490, yPosition, 100, rowHeight).stroke();
+                doc.rect(50, yPosition, 500, rowHeight).fill(bgColor);
+                totalAmount += order.orderAmount;
 
-                doc.fontSize(8).fillColor('black')
-                    .text(index + 1, 50, yPosition + 5, { width: 50, align: 'center' })
-                    .text(order._id, 120, yPosition + 5, { width: 150, align: 'center' })
-                    .text(new Date(order.createdAt).toLocaleDateString('en-GB'), 270, yPosition + 5, { width: 100, align: 'center' })
-                    .text(order.userId, 380, yPosition + 5, { width: 100, align: 'center' })
-                    .text(order.orderAmount, 490, yPosition + 5, { width: 100, align: 'center' });
+                doc.fontSize(10).fillColor('black').font('Helvetica')
+                    .text(index + 1, 55, yPosition + 5, { width: 50, align: 'center' })
+                    .text(order.orderIdentificationCode, 115, yPosition + 5, { width: 120, align: 'center' })
+                    .text(new Date(order.createdAt).toLocaleDateString('en-GB'), 245, yPosition + 5, { width: 90, align: 'center' })
+                    .text(order.orderAmount, 455, yPosition + 5, { width: 80, align: 'center' });
 
-                doc.moveDown(1);
+                doc.moveDown(0.5);
             });
+
+
+            doc.moveDown(1);
+            doc.fontSize(12).font('Helvetica-Bold').text(`Total Sales: ₹${totalAmount}`, { align: 'right' });
+
+            doc.fontSize(8).text('Generated on ' + new Date().toLocaleString(), 50, 750);
+            doc.text('Page 1', 500, 750, { align: 'right' });
 
             doc.end();
 
@@ -895,7 +930,7 @@ const downloadReport = async (req, res) => {
                     });
                 });
             });
-        }
+        } 
 
         else if (format === 'excel') {
             const workbook = new excelJS.Workbook();
@@ -905,16 +940,14 @@ const downloadReport = async (req, res) => {
                 { header: 'Sl. No', key: 'sl_no', width: 10 },
                 { header: 'Order ID', key: 'orderId', width: 30 },
                 { header: 'Date (dd-mm-yyyy)', key: 'date', width: 20 },
-                { header: 'Customer ID', key: 'userId', width: 20 },
                 { header: 'Total Amount (₹)', key: 'totalAmount', width: 20 },
             ];
 
             orders.forEach((order, index) => {
                 worksheet.addRow({
                     sl_no: index + 1,
-                    orderId: order._id,
+                    orderId: order.orderIdentificationCode,
                     date: new Date(order.createdAt).toLocaleDateString('en-GB'),
-                    userId: order.userId,
                     totalAmount: order.orderAmount,
                 });
             });
@@ -1028,9 +1061,28 @@ const addBanner = async(req, res)=>{
     }
 }
 
+const orderDetails = async (req, res) => {
+    let orderId = req.params.id;
+    let order = await Order.findOne({ orderId });
+
+    if (!order) {
+        return res.status(404).render('user/404',{hideFooter: true, hideHeader:true})
+    }
+
+    let products = order.products;
+    let deliveryStatus = order.deliveryStatus;
+
+    let daysAfterOrdered = (new Date() - new Date(order.createdAt)) / (1000 * 60 * 60 * 24);
+
+    let returnPossible = daysAfterOrdered <= 5;
+
+    res.render('admin/orderDetails', { products, deliveryStatus, returnPossible, order, hideFooter:true, hideHeader:true
+     });
+};
+
 module.exports = {
-    loadLogin, loginAdmin, loadDashboard, blockUser, unblockUser, loadProducts, loadAddProducts, addProduct,
+    loadLogin, loginAdmin, loadDashboard, blockUser, unblockUser, loadProducts, loadAddProducts, addProduct, orderDetails,
     unlistProduct, listProduct, loadEditProduct, editProduct, logoutAdmin, loadAddCategory, loadCategory, addCategory,
-    loadCategoryManagement, postProductToCategory, deleteCategory, listOrders, deliveryMark, notdeliveredMark, adminCancel, loadAddCoupon,
+    loadCategoryManagement, postProductToCategory, toggleCategoryStatus, listOrders, deliveryMark, notdeliveredMark, adminCancel, loadAddCoupon,
     postCoupon, loadReturns, markReturn, loadEditCategory, postDiscount, loadSales, downloadReport, loadCoupons, removeCoupon, addBanner,loadAddBanner
 }

@@ -38,6 +38,7 @@ const orderSchema = new mongoose.Schema({
     deliveryStatus: { type: String, default: "In Transit" },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }, 
+    orderIdentificationCode: { type: String, required: true, unique: true },
 });
 
 const Order = mongoose.model('Order', orderSchema);

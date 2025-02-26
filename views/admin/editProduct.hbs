@@ -69,10 +69,9 @@
   <label for="category" class="text-white">Category:</label>
   <select id="category" name="category" class="form-control"  required>
     <option value="" disabled selected>Select a category</option>
-    <option value="MEN'S WEAR">MEN'S WEAR</option>
-    <option value="WOMEN'S WEAR">WOMEN'S WEAR</option>
-    <option value="KID'S WEAR">KIDS' WEAR</option>
-    <option value="ACCESSORIES">ACCESSORIES</option>
+    {{#each categories}}
+    <option value="{{this.category}}">{{this.category}}</option>
+    {{/each}}
     
     
   </select>

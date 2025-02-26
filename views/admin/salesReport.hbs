@@ -274,17 +274,31 @@
 
     // Check if dates are selected
     if ((!globalStartDate || !globalEndDate) && (!filterType)) {
-      Swal.fire({
-        icon: 'warning',
-        text: 'Please select both start and end dates.',
-      });
-      return;
+        Swal.fire({
+            icon: 'warning',
+            text: 'Please select both start and end dates.',
+        });
+        return;
+    }
+
+    // Convert date strings to Date objects for comparison
+    const start = new Date(globalStartDate);
+    const end = new Date(globalEndDate);
+
+    // Validate startDate is not greater than endDate
+    if (start > end) {
+        Swal.fire({
+            icon: 'error',
+            text: 'Start date cannot be greater than end date.',
+        });
+        return;
     }
 
     // Construct the URL and navigate
     const url = `/admin/salesReport?startDate=${encodeURIComponent(globalStartDate)}&endDate=${encodeURIComponent(globalEndDate)}&filter=${encodeURIComponent(filterType)}`;
     window.location.href = url;
-  }
+}
+
 
   function downloadReport(format) {
     // Check if global dates are available or extract from URL

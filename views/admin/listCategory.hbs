@@ -64,31 +64,41 @@
     </thead>
     <tbody>
       {{#each categories}}
-      <tr>
-        <th scope="row">{{increment @index }}</th>
-        <td>{{this.category}}</td>
-        <td>{{this.products.length}}</td>
-        <td>{{this.categoryDiscount}}</td>
-        <td>
-          <a href="/admin/addCategoryDicount/{{this.categoryId}}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Edit">
+<tr>
+    <th scope="row">{{increment @index }}</th>
+    <td>{{this.category}}</td>
+    <td>{{this.products.length}}</td>
+    <td>{{this.categoryDiscount}}</td>
+    <td>
+        <a href="/admin/addCategoryDicount/{{this.categoryId}}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
             Add Discount
-          </a>
-            <a href="#" 
-           class="btn btn-sm btn-outline-danger delete-category-btn" 
-           data-category-id="{{this.categoryId}}" 
-           data-bs-toggle="tooltip" 
-           data-bs-placement="top" 
-           title="Delete">
-           Delete Category
         </a>
-          <a href="/admin/addProductToCategory/{{this.categoryId}}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top"
-            title="Edit">
-            Add Products
-          </a>
-          
-        </td>
-      {{/each}}
+
+        {{#if this.isDeleted}}
+            <a href="#" 
+                class="btn btn-sm btn-outline-success toggle-category-btn" 
+                data-category-id="{{this.categoryId}}" 
+                data-action="list"
+                data-bs-toggle="tooltip" 
+                data-bs-placement="top" 
+                title="List Category">
+                List Category
+            </a>
+        {{else}}
+            <a href="#" 
+                class="btn btn-sm btn-outline-warning toggle-category-btn" 
+                data-category-id="{{this.categoryId}}" 
+                data-action="unlist"
+                data-bs-toggle="tooltip" 
+                data-bs-placement="top" 
+                title="Unlist Category">
+                Unlist Category
+            </a>
+        {{/if}}
+    </td>
+</tr>
+{{/each}}
+
     </tbody>
   </table>
   <input id="message" value="{{message}}" type="hidden">
@@ -110,28 +120,32 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-        const deleteButtons = document.querySelectorAll('.delete-category-btn');
+    const categoryButtons = document.querySelectorAll('.toggle-category-btn');
 
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', async (event) => {
-                event.preventDefault();
-                
-                const categoryId = button.getAttribute('data-category-id');
+    categoryButtons.forEach(button => {
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
 
-                const result = await Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You won't be able to revert this!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, delete it!'
-                });
+            const categoryId = button.getAttribute('data-category-id');
+            const action = button.getAttribute('data-action'); // "list" or "unlist"
+            const actionText = action === "unlist" ? "unlist" : "list";
 
-                if (result.isConfirmed) {
-                    window.location.href = `/admin/deleteCategory/${categoryId}`;
-                }
+            // Show confirmation dialog
+            const result = await Swal.fire({
+                title: `Are you sure you want to ${actionText} this category?`,
+                text: "You can change this anytime.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: `Yes, ${actionText} it!`
             });
+
+            if (result.isConfirmed) {
+                window.location.href = `/admin/toggleCategoryStatus/${categoryId}`;
+            }
         });
     });
+});
+
   </script>

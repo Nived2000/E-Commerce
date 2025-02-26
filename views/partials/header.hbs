@@ -83,21 +83,19 @@
                 </button>
                 <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
                     <div class="navbar-nav mr-auto py-0">
-                        <a href="/user/home" class="nav-item nav-link active">Home</a>
-                        <a href="/user/cart" class="nav-item nav-link">Shopping Cart</a>
-                        <a href="/user/wishlist" class="nav-item nav-link">Wishlist</a>
-                        <a href="/user/orders" class="nav-item nav-link">Orders</a>
-                        <a href="/user/products" class="nav-item nav-link">Products</a>
-                        <div class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Account <i
-                                    class="fa fa-angle-down mt-1"></i></a>
-                            <div class="dropdown-menu bg-primary rounded-0 border-0 m-0">
-                                <a href="/user/profile" class="dropdown-item">Profile</a>
-                                <a href="/user/logout" class="dropdown-item">Logout</a>
-                            </div>
-                        </div>
-
-                    </div>
+        <a href="/user/home" class="nav-item nav-link {{#if (eq activeRoute '/user/home')}}active{{/if}}">Home</a>
+        <a href="/user/cart" class="nav-item nav-link {{#if (eq activeRoute '/user/cart')}}active{{/if}}">Shopping Cart</a>
+        <a href="/user/wishlist" class="nav-item nav-link {{#if (eq activeRoute '/user/wishlist')}}active{{/if}}">Wishlist</a>
+        <a href="/user/orders" class="nav-item nav-link {{#if (eq activeRoute '/user/orders')}}active{{/if}}">Orders</a>
+        <a href="/user/products" class="nav-item nav-link {{#if (eq activeRoute '/user/products')}}active{{/if}}">Products</a>
+        <div class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle {{#if (or (eq activeRoute '/user/profile') (eq activeRoute '/user/logout'))}}active{{/if}}" data-bs-toggle="dropdown">Account <i class="fa fa-angle-down mt-1"></i></a>
+            <div class="dropdown-menu bg-primary rounded-0 border-0 m-0">
+                <a href="/user/profile" class="dropdown-item {{#if (eq activeRoute '/user/profile')}}active{{/if}}">Profile</a>
+                <a href="/user/logout" class="dropdown-item {{#if (eq activeRoute '/user/logout')}}active{{/if}}">Logout</a>
+            </div>
+        </div>
+    </div>
                     <div class="navbar-nav ml-auto py-0 d-none d-lg-block">
                         <a href="/user/wishlist" class="btn px-0">
                             <i class="fas fa-heart text-primary"></i>

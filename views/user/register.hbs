@@ -10,19 +10,19 @@
             <div class="or">REGISTER</div>
 
             <label for="name">Name</label>
-            <input id="name" type="text" placeholder="Enter your name" name="name" value="{{enteredName}}" required />
+            <input id="name" type="text" placeholder="Enter your name" name="name" value="{{enteredName}}"  />
 
             <label for="email">Email</label>
-            <input id="email" type="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}" required />
+            <input id="email" type="email" placeholder="Enter Email" name="email" value="{{enteredEmail}}"  />
 
             <label for="phone">Phone Number</label>
-            <input id="phone" type="text" placeholder="Enter Phone Number" name="phone" value="{{enteredPhone}}" required />
+            <input id="phone" type="tel" placeholder="Enter Phone Number" pattern="[0-9]{10}" maxlength="10" name="phone" value="{{enteredPhone}}"  />
 
             <label for="password">Password</label>
-            <input id="password" type="password" placeholder="Enter Password" name="password" value="{{enteredPassword}}" required />
+            <input id="password" type="password" placeholder="Enter Password" name="password" value="{{enteredPassword}}"  />
 
             <label for="confirmPassword">Confirm Password</label>
-            <input id="confirmPassword" type="password" placeholder="Confirm entered Password" name="confirmPassword" required />
+            <input id="confirmPassword" type="password" placeholder="Confirm entered Password" name="confirmPassword"  />
 
             <label for="code">Referral Code (Optional):</label>
             <input id="confirmPassword" type="string" placeholder="Enter referral code" name="code" />
@@ -47,44 +47,42 @@
 
 <script>
     function formValidate() {
-        const emailInput = document.getElementById("email");
-        const password = document.getElementById("password").value;
-        const confirmPassword = document.getElementById("confirmPassword").value;
-        const name = document.getElementById("name").value;
+    const emailInput = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
+    const name = document.getElementById("name").value.trim();
 
-        // Regex to validate email with `.com` at the end
-        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const namePattern = /^[A-Za-z\s]+$/; // Only letters and spaces allowed
 
-        // Check if fields are empty
-        if (!name || !emailInput.value || !password || !confirmPassword) {
-            Swal.fire("All fields are required!");
-            return false;
-        }
-
-        // Check if email is valid
-        if (!emailPattern.test(emailInput.value)) {
-            Swal.fire("Email must be valid");
-            return false;
-        }
-
-        // Check if passwords match
-        if (password !== confirmPassword) {
-            Swal.fire("Passwords do not match!");
-            return false;
-        }
-
-        return true; // Allow form submission
+    if (!name || !emailInput || !password || !confirmPassword) {
+        Swal.fire("All fields are required!");
+        return false;
     }
 
-    document.getElementById("emailForm").onsubmit = function () {
-        return formValidate();
-    };
-
-    const message = document.getElementById('message').value;
-    if (message) {
-        Swal.fire({
-            icon: 'info', // Customize icon as needed
-            text: message
-        });
+    if (!emailPattern.test(emailInput)) {
+        Swal.fire("Email must be valid!");
+        return false;
     }
+
+    if (password !== confirmPassword) {
+        Swal.fire("Passwords do not match!");
+        return false;
+    }
+
+    return true;
+}
+
+document.getElementById("emailForm").onsubmit = function () {
+    return formValidate();
+};
+
+const message = document.getElementById('message')?.value;
+if (message) {
+    Swal.fire({
+        icon: 'info',
+        text: message
+    });
+}
+
 </script>

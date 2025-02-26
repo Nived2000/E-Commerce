@@ -18,7 +18,7 @@
                     </div>
                     <div class="form-group">
                         <label for="edit-phone">Phone Number</label>
-                        <input type="text" name="phone" class="form-control" id="edit-phone" value="{{user.phone}}">
+                        <input type="tel" placeholder="Enter Phone Number" pattern="[0-9]{10}" maxlength="10" name="phone" class="form-control" id="edit-phone" value="{{user.phone}}">
                     </div>
                     
                     <button type="submit" class="btn btn-primary">Save Changes</button>
